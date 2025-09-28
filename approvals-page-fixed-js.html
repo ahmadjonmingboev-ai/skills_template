@@ -1,0 +1,1155 @@
+// Approvals Page JavaScript with Confluence REST API Integration - FIXED VERSION
+
+// Include required libraries (add these script tags to your Confluence page)
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+// Configuration
+const CONFIG = {
+    confluence: {
+        domain: 'https://www.myconfluence.net',  // Update with actual domain
+        pageId: '123345346',
+        api: {
+            currentUser: '/rest/api/user/current',
+            attachment: '/rest/api/content/{pageId}/child/attachment'
+        }
+    },
+    files: {
+        userDatabase: 'userdatabase.xlsx',
+        mainTaskDatabase: 'maintaskdatabase.xlsx',
+        taskMapping: 'taskmapping.xlsx',
+        approvals: 'approvals.xlsx',
+        notifications: 'notifications.xlsx',
+        auditLog: 'audit_log.xlsx'
+    },
+    maxRowsPerPage: 50
+};
+
+// API Helper Functions (same as Page 1)
+const API = {
+    getCurrentUser: async function() {
+        try {
+            const response = await fetch(CONFIG.confluence.domain + CONFIG.confluence.api.currentUser, {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) {
+                console.warn('User API returned:', response.status);
+                return null;
+            }
+            const userData = await response.json();
+            const normalizedUser = {
+                displayName: userData.displayName || userData.fullName || userData.name || 'Unknown',
+                key: userData.key || userData.username || userData.accountId || userData.name || userData.userName,
+                email: userData.emailAddress || userData.email,
+                ...userData
+            };
+            return normalizedUser;
+        } catch (error) {
+            console.warn('Error fetching current user:', error);
+            return null;
+        }
+    },
+    
+    getAttachments: async function() {
+        try {
+            const url = CONFIG.confluence.domain +
+                       CONFIG.confluence.api.attachment.replace('{pageId}', CONFIG.confluence.pageId);
+            const response = await fetch(url, {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('Failed to fetch attachments');
+            const data = await response.json();
+            return data.results || [];
+        } catch (error) {
+            console.error('Error fetching attachments:', error);
+            return [];
+        }
+    },
+    
+    downloadAttachment: async function(attachmentUrl) {
+        try {
+            const url = attachmentUrl.startsWith('http') ? attachmentUrl : CONFIG.confluence.domain + attachmentUrl;
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            return arrayBuffer;
+        } catch (error) {
+            console.error('Error downloading attachment:', error);
+            return null;
+        }
+    },
+    
+    uploadAttachment: async function(filename, blob) {
+        try {
+            const attachments = await this.getAttachments();
+            const existingAttachment = attachments.find(att => att.title === filename);
+            
+            if (!existingAttachment) {
+                throw new Error(`Attachment ${filename} not found`);
+            }
+            
+            const formData = new FormData();
+            formData.append('file', blob, filename);
+            formData.append('minorEdit', 'true');
+            formData.append('comment', 'Updated by Approval System');
+            
+            // Try multiple upload methods
+            let url, response;
+            
+            // Method 1: Update existing attachment
+            try {
+                url = `${CONFIG.confluence.domain}/rest/api/content/${existingAttachment.id}/child/attachment/${existingAttachment.id}/data`;
+                response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Atlassian-Token': 'no-check'
+                    }
+                });
+                
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.log('Method 1 failed, trying method 2');
+            }
+            
+            // Method 2: Create new version
+            try {
+                url = `${CONFIG.confluence.domain}/rest/api/content/${CONFIG.confluence.pageId}/child/attachment`;
+                response = await fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin',
+                    headers: {
+                        'X-Atlassian-Token': 'no-check'
+                    }
+                });
+                
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (e) {
+                console.log('Method 2 failed');
+            }
+            
+            throw new Error('Failed to upload attachment');
+            
+        } catch (error) {
+            console.error('Error uploading attachment:', error);
+            throw error;
+        }
+    }
+};
+
+// Global variables
+let currentUser = null;
+let allUsers = [];
+let approvalRequests = [];  // This will be grouped requests
+let allApprovalRows = [];  // Raw rows from Excel
+let filteredRequests = [];
+let taskMapping = [];
+let currentPage = 1;
+let attachments = {};
+let selectedRequests = new Set();
+let currentModalRequest = null;
+let currentRejectRequest = null;
+
+// Initialize the application
+async function initializeApp() {
+    showLoading(true);
+    try {
+        // Get current user from Confluence
+        const confluenceUser = await API.getCurrentUser();
+        if (!confluenceUser) {
+            showToast('Could not get current user. Please ensure you are logged into Confluence.', 'error');
+            return;
+        }
+        
+        currentUser = {
+            username: confluenceUser.key,
+            displayName: confluenceUser.displayName,
+            email: confluenceUser.email
+        };
+        
+        // Load all attachments first
+        await loadAttachments();
+        
+        // Load user data and check permissions
+        const hasAccess = await checkUserAccess();
+        if (!hasAccess) {
+            showNoAccess();
+            return;
+        }
+        
+        // Load all necessary data
+        await loadApprovalRequests();
+        await loadTaskMapping();
+        
+        // Initialize UI
+        initializeUI();
+        filterApprovals();
+        updateStatistics();
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showToast('Failed to initialize application. Please refresh the page.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Load all attachments
+async function loadAttachments() {
+    const attachmentList = await API.getAttachments();
+    attachmentList.forEach(att => {
+        attachments[att.title] = att._links.download || att._links.webui;
+    });
+}
+
+// Fetch and parse Excel file
+async function fetchExcelData(filename) {
+    try {
+        const downloadUrl = attachments[filename];
+        if (!downloadUrl) {
+            throw new Error(`Attachment ${filename} not found`);
+        }
+        
+        const arrayBuffer = await API.downloadAttachment(downloadUrl);
+        if (!arrayBuffer) {
+            throw new Error(`Failed to download ${filename}`);
+        }
+        
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        return workbook;
+        
+    } catch (error) {
+        console.error(`Error fetching ${filename}:`, error);
+        throw error;
+    }
+}
+
+// Check user access (must be manager or admin)
+async function checkUserAccess() {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.userDatabase);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        allUsers = XLSX.utils.sheet_to_json(worksheet);
+        
+        const userData = allUsers.find(u => u.username === currentUser.username);
+        if (!userData) {
+            // Fallback for testing
+            userData = allUsers.find(u => u.username === 'BD12345' || u.username === 'CQ12356');
+        }
+        
+        if (!userData) {
+            return false;
+        }
+        
+        currentUser = { ...currentUser, ...userData };
+        
+        // Check if user has manager or admin role
+        return userData.role === 'manager' || userData.role === 'admin';
+        
+    } catch (error) {
+        console.error('Failed to check user access:', error);
+        return false;
+    }
+}
+
+// Load approval requests - GROUP BY REQUEST ID
+async function loadApprovalRequests() {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.approvals);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        allApprovalRows = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Filter based on user role
+        let filteredRows;
+        if (currentUser.role === 'admin') {
+            // Admin sees all requests
+            filteredRows = allApprovalRows;
+        } else if (currentUser.role === 'manager') {
+            // Manager sees only requests from their team
+            const teamMembers = allUsers.filter(u => u.team === currentUser.team);
+            const teamUsernames = teamMembers.map(u => u.username);
+            filteredRows = allApprovalRows.filter(req => teamUsernames.includes(req.Username));
+        }
+        
+        // GROUP BY REQUEST ID
+        const requestMap = {};
+        
+        filteredRows.forEach(row => {
+            const requestId = row['Request ID'];
+            if (!requestMap[requestId]) {
+                const user = allUsers.find(u => u.username === row.Username);
+                requestMap[requestId] = {
+                    'Request ID': requestId,
+                    'Username': row.Username,
+                    'UserName': user ? user.name : row.Username,
+                    'Team': user ? user.team : 'Unknown',
+                    'Status': row.Status || 'Pending',
+                    'Timestamp': row.Timestamp,
+                    'ProcessedBy': row.ProcessedBy,
+                    'ProcessedAt': row.ProcessedAt,
+                    'RejectionReason': row.RejectionReason,
+                    'tasks': []
+                };
+            }
+            
+            // Add task details to the request
+            requestMap[requestId].tasks.push({
+                'Item_ID': row.Item_ID,
+                'Category': row.Category,
+                'Task_Group': row.Task_Group,
+                'Task_Name': row.Task_Name,
+                ...row  // Include all market columns and other data
+            });
+        });
+        
+        // Convert map to array
+        approvalRequests = Object.values(requestMap);
+        
+        console.log('Loaded approval requests (grouped):', approvalRequests.length);
+        
+    } catch (error) {
+        console.error('Failed to load approval requests:', error);
+        approvalRequests = [];
+    }
+}
+
+// Load task mapping
+async function loadTaskMapping() {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.taskMapping);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        taskMapping = XLSX.utils.sheet_to_json(worksheet);
+    } catch (error) {
+        console.error('Failed to load task mapping:', error);
+    }
+}
+
+// Initialize UI
+function initializeUI() {
+    setupFilters();
+    updatePendingCount();
+}
+
+// Setup filter dropdowns
+function setupFilters() {
+    // Team filter
+    const teams = [...new Set(approvalRequests.map(r => r.Team))].filter(Boolean);
+    const teamFilter = document.getElementById('teamFilter');
+    teams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team;
+        option.textContent = team;
+        teamFilter.appendChild(option);
+    });
+    
+    // Category filter - get from tasks
+    const categories = new Set();
+    approvalRequests.forEach(req => {
+        req.tasks.forEach(task => {
+            if (task.Category) categories.add(task.Category);
+        });
+    });
+    
+    const categoryFilter = document.getElementById('categoryFilter');
+    [...categories].forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+}
+
+// Filter approvals based on search and filters
+function filterApprovals() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('statusFilter').value;
+    const teamFilter = document.getElementById('teamFilter').value;
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    
+    filteredRequests = approvalRequests.filter(req => {
+        const matchesSearch = !searchTerm || 
+            req.Username.toLowerCase().includes(searchTerm) ||
+            req.UserName.toLowerCase().includes(searchTerm) ||
+            req.tasks.some(task => task.Task_Name && task.Task_Name.toLowerCase().includes(searchTerm)) ||
+            req['Request ID'].toString().includes(searchTerm);
+        
+        const matchesStatus = statusFilter === 'all' || 
+            (statusFilter === 'pending' && (!req.Status || req.Status === 'Pending')) ||
+            (statusFilter === 'approved' && req.Status === 'Approved') ||
+            (statusFilter === 'rejected' && req.Status === 'Rejected');
+        
+        const matchesTeam = teamFilter === 'all' || req.Team === teamFilter;
+        const matchesCategory = !categoryFilter || 
+            req.tasks.some(task => task.Category === categoryFilter);
+        
+        return matchesSearch && matchesStatus && matchesTeam && matchesCategory;
+    });
+    
+    currentPage = 1;
+    renderTable();
+}
+
+// Render the approvals table - ONE ROW PER REQUEST
+function renderTable() {
+    const tbody = document.getElementById('approvalsTableBody');
+    const emptyState = document.getElementById('emptyState');
+    
+    tbody.innerHTML = '';
+    selectedRequests.clear();
+    document.getElementById('selectAll').checked = false;
+    updateSelectionUI();
+    
+    if (filteredRequests.length === 0) {
+        document.getElementById('approvalsTable').style.display = 'none';
+        emptyState.style.display = 'flex';
+        updatePaginationInfo(0, 0, 0);
+        return;
+    }
+    
+    document.getElementById('approvalsTable').style.display = 'table';
+    emptyState.style.display = 'none';
+    
+    // Paginate
+    const startIndex = (currentPage - 1) * CONFIG.maxRowsPerPage;
+    const endIndex = Math.min(startIndex + CONFIG.maxRowsPerPage, filteredRequests.length);
+    const pageData = filteredRequests.slice(startIndex, endIndex);
+    
+    // Render rows
+    pageData.forEach(req => {
+        const row = document.createElement('tr');
+        
+        // Get task names and count
+        const taskNames = req.tasks.map(t => t.Task_Name).filter(Boolean);
+        const taskCount = req.tasks.length;
+        const displayTasks = taskCount > 2 
+            ? `${taskNames.slice(0, 2).join(', ')}... (+${taskCount - 2} more)` 
+            : taskNames.join(', ');
+        
+        // Get all unique categories
+        const categories = [...new Set(req.tasks.map(t => t.Category).filter(Boolean))];
+        
+        // Count total changes across all tasks
+        const totalChanges = req.tasks.reduce((count, task) => {
+            const markets = Object.keys(task).filter(key => 
+                !['Request ID', 'Username', 'Item_ID', 'Category', 'Task_Group', 
+                  'Task_Name', 'Status', 'Timestamp', 'Team', 'UserName'].includes(key)
+            );
+            const changes = markets.filter(m => task[m]).length;
+            return count + changes;
+        }, 0);
+        
+        const isPending = !req.Status || req.Status === 'Pending';
+        
+        row.innerHTML = `
+            <td>
+                <input type="checkbox" 
+                       data-request-id="${req['Request ID']}"
+                       onchange="toggleSelection('${req['Request ID']}')"
+                       ${!isPending ? 'disabled' : ''}>
+            </td>
+            <td><strong>#${req['Request ID'] || 'N/A'}</strong></td>
+            <td>
+                <div><strong>${req.UserName || req.Username}</strong></div>
+                <div style="font-size: 11px; color: var(--gray);">${req.Username}</div>
+            </td>
+            <td>${req.Team || 'N/A'}</td>
+            <td>
+                <div title="${taskNames.join(', ')}">
+                    ${displayTasks || 'N/A'}
+                </div>
+                <div style="font-size: 11px; color: var(--gray);">
+                    ${taskCount} task${taskCount !== 1 ? 's' : ''}
+                </div>
+            </td>
+            <td>${categories.join(', ') || 'N/A'}</td>
+            <td>
+                <span class="market-tag">${totalChanges} changes</span>
+            </td>
+            <td>${formatDate(req.Timestamp)}</td>
+            <td>
+                <span class="status-badge ${(req.Status || 'pending').toLowerCase()}">
+                    ${req.Status || 'Pending'}
+                </span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    ${isPending ? `
+                        <button class="action-btn approve" onclick="approveRequest('${req['Request ID']}')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            Approve All
+                        </button>
+                        <button class="action-btn reject" onclick="rejectRequest('${req['Request ID']}')">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Reject All
+                        </button>
+                    ` : ''}
+                    <button class="action-btn view" onclick="viewDetails('${req['Request ID']}')">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                        View
+                    </button>
+                </div>
+            </td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    updatePagination();
+    updatePaginationInfo(startIndex + 1, endIndex, filteredRequests.length);
+}
+
+// Approve request - UPDATE ALL TASKS IN THE REQUEST
+async function approveRequest(requestId) {
+    const request = approvalRequests.find(r => r['Request ID'] == requestId);
+    if (!request) return;
+    
+    showLoading(true);
+    try {
+        // Update maintaskdatabase.xlsx with ALL approved changes
+        await updateUserSkills(request, true);
+        
+        // Update approval status for ALL rows
+        await updateApprovalStatus(requestId, 'Approved');
+        
+        // Create notification
+        await createNotification(request.Username, requestId, 'Approved');
+        
+        // Update local data
+        request.Status = 'Approved';
+        
+        showToast(`Request #${requestId} with ${request.tasks.length} task(s) has been approved`, 'success');
+        
+        // Refresh data without page reload
+        filterApprovals();
+        updateStatistics();
+        
+    } catch (error) {
+        console.error('Failed to approve request:', error);
+        showToast('Failed to approve request. Please try again.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Reject request
+function rejectRequest(requestId) {
+    currentRejectRequest = requestId;
+    document.getElementById('rejectionReason').value = '';
+    document.getElementById('rejectModal').classList.add('active');
+}
+
+// Confirm rejection
+async function confirmReject() {
+    const requestId = currentRejectRequest;
+    const reason = document.getElementById('rejectionReason').value;
+    
+    if (!reason.trim()) {
+        showToast('Please provide a rejection reason', 'warning');
+        return;
+    }
+    
+    const request = approvalRequests.find(r => r['Request ID'] == requestId);
+    if (!request) return;
+    
+    closeRejectModal();
+    showLoading(true);
+    
+    try {
+        // Update approval status
+        await updateApprovalStatus(requestId, 'Rejected', reason);
+        
+        // Create notification
+        await createNotification(request.Username, requestId, 'Rejected', reason);
+        
+        // Update local data
+        request.Status = 'Rejected';
+        
+        showToast(`Request #${requestId} with ${request.tasks.length} task(s) has been rejected`, 'info');
+        
+        // Refresh data without page reload
+        filterApprovals();
+        updateStatistics();
+        
+    } catch (error) {
+        console.error('Failed to reject request:', error);
+        showToast('Failed to reject request. Please try again.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Update user skills in maintaskdatabase.xlsx - UPDATE ALL TASKS
+async function updateUserSkills(request, approved) {
+    if (!approved) return;
+    
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.mainTaskDatabase);
+        const userSheet = workbook.Sheets[request.Username];
+        
+        if (!userSheet) {
+            throw new Error(`User sheet ${request.Username} not found`);
+        }
+        
+        const userSkills = XLSX.utils.sheet_to_json(userSheet);
+        
+        // Update ALL tasks in the request
+        request.tasks.forEach(task => {
+            const skillIndex = userSkills.findIndex(s => s.Item_ID == task.Item_ID);
+            if (skillIndex !== -1) {
+                // Update all market values from the task
+                const markets = Object.keys(task).filter(key => 
+                    !['Request ID', 'Username', 'Item_ID', 'Category', 'Task_Group', 
+                      'Task_Name', 'Status', 'Timestamp', 'Team', 'UserName'].includes(key)
+                );
+                
+                markets.forEach(market => {
+                    if (task[market]) {
+                        userSkills[skillIndex][market] = task[market];
+                    }
+                });
+            }
+        });
+        
+        // Update worksheet
+        const newWorksheet = XLSX.utils.json_to_sheet(userSkills);
+        workbook.Sheets[request.Username] = newWorksheet;
+        
+        // Save file
+        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        await API.uploadAttachment(CONFIG.files.mainTaskDatabase, blob);
+        
+    } catch (error) {
+        console.error('Failed to update user skills:', error);
+        throw error;
+    }
+}
+
+// Update approval status - UPDATE ALL ROWS WITH SAME REQUEST ID
+async function updateApprovalStatus(requestId, status, reason = '') {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.approvals);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const approvals = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Update status for ALL rows with this request ID
+        approvals.forEach(approval => {
+            if (approval['Request ID'] == requestId) {
+                approval.Status = status;
+                approval.ProcessedBy = currentUser.username;
+                approval.ProcessedAt = new Date().toISOString();
+                if (reason) {
+                    approval.RejectionReason = reason;
+                }
+            }
+        });
+        
+        // Update worksheet
+        const newWorksheet = XLSX.utils.json_to_sheet(approvals);
+        workbook.Sheets[workbook.SheetNames[0]] = newWorksheet;
+        
+        // Save file
+        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        await API.uploadAttachment(CONFIG.files.approvals, blob);
+        
+    } catch (error) {
+        console.error('Failed to update approval status:', error);
+        throw error;
+    }
+}
+
+// Create notification
+async function createNotification(username, requestId, status, reason = '') {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.notifications);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const notifications = XLSX.utils.sheet_to_json(worksheet);
+        
+        // Add new notification
+        notifications.push({
+            'Request ID': requestId,
+            'Username': username,
+            'Status': status,
+            'Request Type': 'Skill Update',
+            'Timestamp': new Date().toISOString(),
+            'ProcessedBy': currentUser.username,
+            'Reason': reason
+        });
+        
+        // Update worksheet
+        const newWorksheet = XLSX.utils.json_to_sheet(notifications);
+        workbook.Sheets[workbook.SheetNames[0]] = newWorksheet;
+        
+        // Save file
+        const wbout = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        await API.uploadAttachment(CONFIG.files.notifications, blob);
+        
+    } catch (error) {
+        console.error('Failed to create notification:', error);
+        throw error;
+    }
+}
+
+// Bulk approve
+async function bulkApprove() {
+    if (selectedRequests.size === 0) return;
+    
+    const confirmed = confirm(`Are you sure you want to approve ${selectedRequests.size} request(s)?`);
+    if (!confirmed) return;
+    
+    showLoading(true);
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (const requestId of selectedRequests) {
+        try {
+            const request = approvalRequests.find(r => r['Request ID'] == requestId);
+            if (!request) continue;
+            
+            // Update maintaskdatabase.xlsx with approved changes
+            await updateUserSkills(request, true);
+            
+            // Update approval status
+            await updateApprovalStatus(requestId, 'Approved');
+            
+            // Create notification
+            await createNotification(request.Username, requestId, 'Approved');
+            
+            // Update local data
+            request.Status = 'Approved';
+            
+            successCount++;
+        } catch (error) {
+            console.error(`Failed to approve request ${requestId}:`, error);
+            failCount++;
+        }
+    }
+    
+    selectedRequests.clear();
+    
+    if (failCount > 0) {
+        showToast(`Approved ${successCount} requests, ${failCount} failed`, 'warning');
+    } else {
+        showToast(`Successfully approved ${successCount} requests`, 'success');
+    }
+    
+    // Refresh data without page reload
+    filterApprovals();
+    updateStatistics();
+    updateSelectionUI();
+    
+    showLoading(false);
+}
+
+// View details modal - SHOW ALL TASKS
+function viewDetails(requestId) {
+    const request = approvalRequests.find(r => r['Request ID'] == requestId);
+    if (!request) return;
+    
+    currentModalRequest = request;
+    
+    const content = document.getElementById('modalDetailsContent');
+    
+    // Create task changes table
+    const tasksTable = request.tasks.map(task => {
+        const markets = Object.keys(task).filter(key => 
+            !['Request ID', 'Username', 'Item_ID', 'Category', 'Task_Group', 
+              'Task_Name', 'Status', 'Timestamp', 'Team', 'UserName', 'ProcessedBy', 
+              'ProcessedAt', 'RejectionReason'].includes(key)
+        );
+        
+        const changes = markets.filter(m => task[m]).map(m => `
+            <span class="market-tag">${m}</span>: <span class="change-to">${task[m]}</span>
+        `).join(', ');
+        
+        return `
+            <tr>
+                <td>${task.Item_ID}</td>
+                <td>${task.Task_Name}</td>
+                <td>${task.Category}</td>
+                <td>${task.Task_Group}</td>
+                <td>${changes || 'No changes'}</td>
+            </tr>
+        `;
+    }).join('');
+    
+    content.innerHTML = `
+        <div class="detail-section">
+            <div class="detail-section-title">Request Information</div>
+            <div class="detail-row">
+                <span class="detail-label">Request ID:</span>
+                <span class="detail-value">#${request['Request ID']}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Submitted By:</span>
+                <span class="detail-value">${request.UserName} (${request.Username})</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Team:</span>
+                <span class="detail-value">${request.Team}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Submitted On:</span>
+                <span class="detail-value">${formatDate(request.Timestamp)}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value">
+                    <span class="status-badge ${(request.Status || 'pending').toLowerCase()}">
+                        ${request.Status || 'Pending'}
+                    </span>
+                </span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Total Tasks:</span>
+                <span class="detail-value">${request.tasks.length}</span>
+            </div>
+            ${request.ProcessedBy ? `
+                <div class="detail-row">
+                    <span class="detail-label">Processed By:</span>
+                    <span class="detail-value">${request.ProcessedBy}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Processed On:</span>
+                    <span class="detail-value">${formatDate(request.ProcessedAt)}</span>
+                </div>
+            ` : ''}
+            ${request.RejectionReason ? `
+                <div class="detail-row">
+                    <span class="detail-label">Rejection Reason:</span>
+                    <span class="detail-value">${request.RejectionReason}</span>
+                </div>
+            ` : ''}
+        </div>
+        
+        <div class="detail-section">
+            <div class="detail-section-title">Tasks and Changes</div>
+            <table class="changes-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>Task Name</th>
+                        <th>Category</th>
+                        <th>Task Group</th>
+                        <th>Changes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${tasksTable}
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    // Update modal footer buttons based on status
+    const modalFooter = document.querySelector('#detailsModal .modal-footer');
+    const isPending = !request.Status || request.Status === 'Pending';
+    
+    if (isPending) {
+        modalFooter.querySelector('.btn-success').style.display = 'flex';
+        modalFooter.querySelector('.btn-danger').style.display = 'flex';
+    } else {
+        modalFooter.querySelector('.btn-success').style.display = 'none';
+        modalFooter.querySelector('.btn-danger').style.display = 'none';
+    }
+    
+    document.getElementById('detailsModal').classList.add('active');
+}
+
+// Modal actions
+function approveFromModal() {
+    if (currentModalRequest) {
+        const requestId = currentModalRequest['Request ID'];
+        closeDetailsModal();
+        approveRequest(requestId);
+    }
+}
+
+function rejectFromModal() {
+    if (currentModalRequest) {
+        const requestId = currentModalRequest['Request ID'];
+        closeDetailsModal();
+        rejectRequest(requestId);
+    }
+}
+
+// Selection handling - FIXED
+function toggleSelection(requestId) {
+    // Convert to string to ensure consistency
+    const reqId = requestId.toString();
+    
+    if (selectedRequests.has(reqId)) {
+        selectedRequests.delete(reqId);
+    } else {
+        // Only add if the request is pending
+        const request = approvalRequests.find(r => r['Request ID'] == reqId);
+        if (request && (!request.Status || request.Status === 'Pending')) {
+            selectedRequests.add(reqId);
+        }
+    }
+    updateSelectionUI();
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('#approvalsTableBody input[type="checkbox"]:not(:disabled)');
+    
+    selectedRequests.clear();
+    
+    if (selectAll.checked) {
+        checkboxes.forEach(cb => {
+            cb.checked = true;
+            const requestId = cb.dataset.requestId;
+            selectedRequests.add(requestId);
+        });
+    } else {
+        checkboxes.forEach(cb => {
+            cb.checked = false;
+        });
+    }
+    
+    updateSelectionUI();
+}
+
+function updateSelectionUI() {
+    document.getElementById('selectedCount').textContent = selectedRequests.size;
+    document.getElementById('bulkApproveBtn').disabled = selectedRequests.size === 0;
+}
+
+// Update statistics
+function updateStatistics() {
+    const today = new Date().toDateString();
+    
+    const pending = approvalRequests.filter(r => !r.Status || r.Status === 'Pending').length;
+    const approvedToday = approvalRequests.filter(r => 
+        r.Status === 'Approved' && 
+        r.ProcessedAt && 
+        new Date(r.ProcessedAt).toDateString() === today
+    ).length;
+    const rejectedToday = approvalRequests.filter(r => 
+        r.Status === 'Rejected' && 
+        r.ProcessedAt && 
+        new Date(r.ProcessedAt).toDateString() === today
+    ).length;
+    const totalProcessed = approvalRequests.filter(r => 
+        r.Status === 'Approved' || r.Status === 'Rejected'
+    ).length;
+    
+    document.getElementById('pendingRequests').textContent = pending;
+    document.getElementById('approvedToday').textContent = approvedToday;
+    document.getElementById('rejectedToday').textContent = rejectedToday;
+    document.getElementById('totalProcessed').textContent = totalProcessed;
+    
+    updatePendingCount();
+}
+
+function updatePendingCount() {
+    const pending = approvalRequests.filter(r => !r.Status || r.Status === 'Pending').length;
+    document.getElementById('pendingCount').textContent = pending;
+}
+
+// Pagination
+function updatePagination() {
+    const totalPages = Math.ceil(filteredRequests.length / CONFIG.maxRowsPerPage);
+    const paginationControls = document.getElementById('paginationControls');
+    paginationControls.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-btn';
+    prevBtn.textContent = 'Previous';
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.onclick = () => {
+        if (currentPage > 1) {
+            currentPage--;
+            renderTable();
+        }
+    };
+    paginationControls.appendChild(prevBtn);
+    
+    // Page numbers
+    let startPage = Math.max(1, currentPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => {
+            currentPage = i;
+            renderTable();
+        };
+        paginationControls.appendChild(pageBtn);
+    }
+    
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-btn';
+    nextBtn.textContent = 'Next';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderTable();
+        }
+    };
+    paginationControls.appendChild(nextBtn);
+}
+
+function updatePaginationInfo(from, to, total) {
+    document.getElementById('showingFrom').textContent = from;
+    document.getElementById('showingTo').textContent = to;
+    document.getElementById('totalRecords').textContent = total;
+}
+
+// Export functionality
+function exportApprovals() {
+    // Export the raw data with all tasks
+    const exportData = [];
+    filteredRequests.forEach(req => {
+        req.tasks.forEach(task => {
+            exportData.push({
+                'Request ID': req['Request ID'],
+                'Username': req.Username,
+                'Name': req.UserName,
+                'Team': req.Team,
+                'Status': req.Status,
+                'Submitted': req.Timestamp,
+                ...task
+            });
+        });
+    });
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Approval Requests');
+    XLSX.writeFile(wb, `approval_requests_${new Date().getTime()}.xlsx`);
+    showToast('Data exported successfully', 'success');
+}
+
+// Refresh data
+async function refreshApprovals() {
+    await initializeApp();
+    showToast('Data refreshed successfully', 'success');
+}
+
+// Modal functions
+function closeDetailsModal() {
+    document.getElementById('detailsModal').classList.remove('active');
+    currentModalRequest = null;
+}
+
+function closeRejectModal() {
+    document.getElementById('rejectModal').classList.remove('active');
+    currentRejectRequest = null;
+}
+
+// Utility functions
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return dateString;
+    }
+}
+
+function showLoading(show) {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.classList.toggle('active', show);
+    }
+}
+
+function showNoAccess() {
+    document.getElementById('approvalsPage').style.display = 'none';
+    document.getElementById('noAccessMessage').style.display = 'flex';
+}
+
+// Toast notification system
+function showToast(message, type = 'info', title = '') {
+    const toastContainer = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        error: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        warning: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+        info: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+    };
+    
+    const defaultTitles = {
+        success: 'Success',
+        error: 'Error',
+        warning: 'Warning',
+        info: 'Information'
+    };
+    
+    const toastTitle = title || defaultTitles[type];
+    
+    toast.innerHTML = `
+        ${icons[type]}
+        <div class="toast-content">
+            <div class="toast-title">${toastTitle}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="removeToast(this.parentElement)">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        removeToast(toast);
+    }, 5000);
+}
+
+function removeToast(toast) {
+    if (!toast || toast.classList.contains('removing')) return;
+    
+    toast.classList.add('removing');
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.remove();
+        }
+    }, 300);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
