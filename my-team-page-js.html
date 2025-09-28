@@ -1,0 +1,1009 @@
+// My Team Page JavaScript with Confluence REST API Integration
+
+// Include required libraries (add these script tags to your Confluence page)
+// <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+// Configuration
+const CONFIG = {
+    confluence: {
+        domain: 'https://www.myconfluence.net',  // Update with actual domain
+        pageId: '123345346',
+        pageUrl: 'https://www.myconfluence.net/wiki/spaces/TEAM/pages/123345346', // Update with actual page URL
+        api: {
+            currentUser: '/rest/api/user/current',
+            attachment: '/rest/api/content/{pageId}/child/attachment'
+        }
+    },
+    files: {
+        userDatabase: 'userdatabase.xlsx',
+        mainTaskDatabase: 'maintaskdatabase.xlsx',
+        taskMapping: 'taskmapping.xlsx'
+    },
+    maxRowsPerPage: 50
+};
+
+// API Helper Functions
+const API = {
+    getCurrentUser: async function() {
+        try {
+            const response = await fetch(CONFIG.confluence.domain + CONFIG.confluence.api.currentUser, {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) {
+                console.warn('User API returned:', response.status);
+                return null;
+            }
+            const userData = await response.json();
+            const normalizedUser = {
+                displayName: userData.displayName || userData.fullName || userData.name || 'Unknown',
+                key: userData.key || userData.username || userData.accountId || userData.name || userData.userName,
+                email: userData.emailAddress || userData.email,
+                ...userData
+            };
+            return normalizedUser;
+        } catch (error) {
+            console.warn('Error fetching current user:', error);
+            return null;
+        }
+    },
+    
+    getAttachments: async function() {
+        try {
+            const url = CONFIG.confluence.domain +
+                       CONFIG.confluence.api.attachment.replace('{pageId}', CONFIG.confluence.pageId);
+            const response = await fetch(url, {
+                credentials: 'same-origin'
+            });
+            if (!response.ok) throw new Error('Failed to fetch attachments');
+            const data = await response.json();
+            return data.results || [];
+        } catch (error) {
+            console.error('Error fetching attachments:', error);
+            return [];
+        }
+    },
+    
+    downloadAttachment: async function(attachmentUrl) {
+        try {
+            const url = attachmentUrl.startsWith('http') ? attachmentUrl : CONFIG.confluence.domain + attachmentUrl;
+            const response = await fetch(url, {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                }
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            return arrayBuffer;
+        } catch (error) {
+            console.error('Error downloading attachment:', error);
+            return null;
+        }
+    }
+};
+
+// Global variables
+let currentUser = null;
+let allUsers = [];
+let allTeams = [];
+let teamMembers = [];
+let selectedTeam = 'all';
+let allTasksData = {};
+let taskMapping = [];
+let attachments = {};
+let selectedUser = null;
+let userTasks = [];
+let filteredUserTasks = [];
+let currentUserPage = 1;
+let teamStatistics = {};
+
+// Initialize the application
+async function initializeApp() {
+    showLoading(true);
+    try {
+        // Get current user from Confluence
+        const confluenceUser = await API.getCurrentUser();
+        if (!confluenceUser) {
+            showToast('Could not get current user. Please ensure you are logged into Confluence.', 'error');
+            return;
+        }
+        
+        currentUser = {
+            username: confluenceUser.key,
+            displayName: confluenceUser.displayName,
+            email: confluenceUser.email
+        };
+        
+        // Load all attachments first
+        await loadAttachments();
+        
+        // Load user data and check permissions
+        const hasAccess = await checkUserAccess();
+        if (!hasAccess) {
+            showNoAccess();
+            return;
+        }
+        
+        // Setup team selector for admin
+        setupTeamSelector();
+        
+        // Load team data
+        await loadTeamData();
+        await loadTaskMapping();
+        
+        // Initialize UI
+        initializeUI();
+        
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showToast('Failed to initialize application. Please refresh the page.', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Load all attachments
+async function loadAttachments() {
+    const attachmentList = await API.getAttachments();
+    attachmentList.forEach(att => {
+        attachments[att.title] = att._links.download || att._links.webui;
+    });
+}
+
+// Fetch and parse Excel file
+async function fetchExcelData(filename) {
+    try {
+        const downloadUrl = attachments[filename];
+        if (!downloadUrl) {
+            throw new Error(`Attachment ${filename} not found`);
+        }
+        
+        const arrayBuffer = await API.downloadAttachment(downloadUrl);
+        if (!arrayBuffer) {
+            throw new Error(`Failed to download ${filename}`);
+        }
+        
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        return workbook;
+        
+    } catch (error) {
+        console.error(`Error fetching ${filename}:`, error);
+        throw error;
+    }
+}
+
+// Check user access (must be manager or admin)
+async function checkUserAccess() {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.userDatabase);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        allUsers = XLSX.utils.sheet_to_json(worksheet);
+        
+        const userData = allUsers.find(u => u.username === currentUser.username);
+        if (!userData) {
+            // Fallback for testing
+            userData = allUsers.find(u => u.username === 'BD12345' || u.username === 'CQ12356');
+        }
+        
+        if (!userData) {
+            return false;
+        }
+        
+        currentUser = { ...currentUser, ...userData };
+        
+        // Check if user has manager or admin role
+        return userData.role === 'manager' || userData.role === 'admin';
+        
+    } catch (error) {
+        console.error('Failed to check user access:', error);
+        return false;
+    }
+}
+
+// Setup team selector for admin
+function setupTeamSelector() {
+    if (currentUser.role !== 'admin') {
+        return; // Only show for admins
+    }
+    
+    // Get all unique teams
+    allTeams = [...new Set(allUsers.map(u => u.team))].filter(Boolean).sort();
+    
+    // Show and populate team selector
+    const selector = document.getElementById('teamSelector');
+    selector.style.display = 'block';
+    
+    // Clear existing options and add new ones
+    selector.innerHTML = '<option value="all">All Teams</option>';
+    allTeams.forEach(team => {
+        const option = document.createElement('option');
+        option.value = team;
+        option.textContent = team;
+        selector.appendChild(option);
+    });
+}
+
+// Handle team change
+function onTeamChange() {
+    const selector = document.getElementById('teamSelector');
+    selectedTeam = selector.value;
+    
+    // Reload team data for selected team
+    loadTeamData().then(() => {
+        initializeUI();
+    });
+}
+
+// Load team data
+async function loadTeamData() {
+    try {
+        // Get team members based on role and selected team
+        if (currentUser.role === 'admin') {
+            if (selectedTeam === 'all') {
+                teamMembers = allUsers;
+            } else {
+                teamMembers = allUsers.filter(u => u.team === selectedTeam);
+            }
+        } else if (currentUser.role === 'manager') {
+            teamMembers = allUsers.filter(u => u.team === currentUser.team);
+        }
+        
+        // Sort alphabetically
+        teamMembers.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        
+        // Load skills data for each team member
+        const workbook = await fetchExcelData(CONFIG.files.mainTaskDatabase);
+        
+        for (const member of teamMembers) {
+            if (workbook.Sheets[member.username]) {
+                const worksheet = workbook.Sheets[member.username];
+                allTasksData[member.username] = XLSX.utils.sheet_to_json(worksheet);
+            } else {
+                allTasksData[member.username] = [];
+            }
+        }
+        
+        // Calculate team statistics
+        calculateTeamStatistics();
+        
+        // Update team info
+        if (currentUser.role === 'admin' && selectedTeam !== 'all') {
+            document.getElementById('teamName').textContent = selectedTeam;
+        } else if (currentUser.role === 'admin' && selectedTeam === 'all') {
+            document.getElementById('teamName').textContent = 'All Teams';
+        } else {
+            document.getElementById('teamName').textContent = currentUser.team;
+        }
+        document.getElementById('teamCount').textContent = teamMembers.length;
+        
+    } catch (error) {
+        console.error('Failed to load team data:', error);
+    }
+}
+
+// Load task mapping
+async function loadTaskMapping() {
+    try {
+        const workbook = await fetchExcelData(CONFIG.files.taskMapping);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        taskMapping = XLSX.utils.sheet_to_json(worksheet);
+    } catch (error) {
+        console.error('Failed to load task mapping:', error);
+    }
+}
+
+// Calculate team statistics
+function calculateTeamStatistics() {
+    let totalCompleted = 0;
+    let totalPending = 0;
+    let totalSkills = new Set();
+    let topPerformer = { name: '', completion: 0 };
+    
+    teamMembers.forEach(member => {
+        const tasks = allTasksData[member.username] || [];
+        let completed = 0;
+        let pending = 0;
+        
+        tasks.forEach(task => {
+            totalSkills.add(task.Task_Name);
+            
+            // Count YES/NO for all markets
+            const markets = Object.keys(task).filter(key => 
+                !['Item_ID', 'Category', 'Task_Group', 'Task_Name'].includes(key)
+            );
+            
+            markets.forEach(market => {
+                if (task[market] === 'yes' || task[market] === 'YES') {
+                    completed++;
+                    totalCompleted++;
+                } else if (task[market] === 'no' || task[market] === 'NO') {
+                    pending++;
+                    totalPending++;
+                }
+            });
+        });
+        
+        const total = completed + pending;
+        const completion = total > 0 ? Math.round((completed / total) * 100) : 0;
+        
+        if (completion > topPerformer.completion) {
+            topPerformer = { name: member.name, completion };
+        }
+        
+        // Store member statistics
+        member.stats = {
+            completed,
+            pending,
+            total,
+            completion
+        };
+    });
+    
+    teamStatistics = {
+        totalMembers: teamMembers.length,
+        avgCompletion: teamMembers.length > 0 
+            ? Math.round(teamMembers.reduce((sum, m) => sum + (m.stats?.completion || 0), 0) / teamMembers.length)
+            : 0,
+        totalSkills: totalSkills.size,
+        topPerformer: topPerformer.name || 'N/A',
+        totalCompleted,
+        totalPending
+    };
+}
+
+// Initialize UI
+function initializeUI() {
+    // Update statistics
+    updateTeamStatistics();
+    
+    // Render team members
+    renderTeamMembers();
+    
+    // Create user tabs
+    createUserTabs();
+}
+
+// Update team statistics display
+function updateTeamStatistics() {
+    document.getElementById('totalMembers').textContent = teamStatistics.totalMembers;
+    document.getElementById('avgCompletion').textContent = teamStatistics.avgCompletion;
+    document.getElementById('totalSkills').textContent = teamStatistics.totalSkills;
+    document.getElementById('topPerformer').textContent = teamStatistics.topPerformer;
+}
+
+// Render team members
+function renderTeamMembers() {
+    const container = document.getElementById('teamMembersGrid');
+    container.innerHTML = '';
+    
+    teamMembers.forEach(member => {
+        const tasks = allTasksData[member.username] || [];
+        
+        // Calculate category-wise completion
+        const categoryStats = {};
+        tasks.forEach(task => {
+            if (!categoryStats[task.Category]) {
+                categoryStats[task.Category] = { completed: 0, total: 0 };
+            }
+            
+            const markets = Object.keys(task).filter(key => 
+                !['Item_ID', 'Category', 'Task_Group', 'Task_Name'].includes(key)
+            );
+            
+            markets.forEach(market => {
+                if (task[market] === 'yes' || task[market] === 'YES') {
+                    categoryStats[task.Category].completed++;
+                    categoryStats[task.Category].total++;
+                } else if (task[market] === 'no' || task[market] === 'NO') {
+                    categoryStats[task.Category].total++;
+                }
+            });
+        });
+        
+        const card = document.createElement('div');
+        card.className = 'member-card';
+        
+        const completion = member.stats?.completion || 0;
+        const strokeColor = completion >= 80 ? 'var(--success)' : completion >= 60 ? 'var(--warning)' : 'var(--danger)';
+        
+        card.innerHTML = `
+            <div class="member-card-header">
+                <div class="member-info">
+                    <div class="member-avatar">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                        </svg>
+                    </div>
+                    <div class="member-details">
+                        <h4>${member.name}</h4>
+                        <p>${member.role} • ${member.team}</p>
+                        <p>${member.tenure || 'N/A'}</p>
+                    </div>
+                </div>
+                <div class="member-completion">
+                    <svg class="completion-circle" width="60" height="60">
+                        <circle class="completion-bg" cx="30" cy="30" r="25"/>
+                        <circle class="completion-progress" cx="30" cy="30" r="25"
+                                stroke="${strokeColor}"
+                                stroke-dasharray="${completion * 1.57} 157"
+                                stroke-dashoffset="0"/>
+                    </svg>
+                    <div class="completion-text">${completion}%</div>
+                </div>
+            </div>
+            
+            <div class="member-stats">
+                <div class="member-stat">
+                    <div class="member-stat-value">${member.stats?.completed || 0}</div>
+                    <div class="member-stat-label">Completed</div>
+                </div>
+                <div class="member-stat">
+                    <div class="member-stat-value">${member.stats?.pending || 0}</div>
+                    <div class="member-stat-label">Pending</div>
+                </div>
+                <div class="member-stat">
+                    <div class="member-stat-value">${member.stats?.total || 0}</div>
+                    <div class="member-stat-label">Total</div>
+                </div>
+            </div>
+            
+            <div class="member-categories">
+                ${Object.keys(categoryStats).slice(0, 3).map(category => {
+                    const stat = categoryStats[category];
+                    const percent = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
+                    return `
+                        <div class="category-progress">
+                            <span class="category-name">${category}</span>
+                            <div class="progress-bar-wrapper">
+                                <div class="progress-bar-fill" style="width: ${percent}%"></div>
+                            </div>
+                            <span class="category-percent">${percent}%</span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+            
+            <div class="member-actions">
+                <button class="member-action-btn" onclick="viewUserDetails('${member.username}')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    View
+                </button>
+                <button class="member-action-btn" onclick="exportMemberData('${member.username}')">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Export
+                </button>
+            </div>
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+// Create user tabs
+function createUserTabs() {
+    const tabsContainer = document.getElementById('userTabs');
+    tabsContainer.innerHTML = '';
+    
+    teamMembers.forEach((member, index) => {
+        const tab = document.createElement('button');
+        tab.className = 'user-tab' + (index === 0 ? ' active' : '');
+        tab.textContent = member.name;
+        tab.onclick = () => selectUserTab(member.username);
+        tabsContainer.appendChild(tab);
+    });
+    
+    // Select first user by default
+    if (teamMembers.length > 0) {
+        selectUserTab(teamMembers[0].username);
+    }
+}
+
+// Select user tab
+function selectUserTab(username) {
+    selectedUser = teamMembers.find(m => m.username === username);
+    if (!selectedUser) return;
+    
+    // Update tabs
+    document.querySelectorAll('.user-tab').forEach((tab, index) => {
+        tab.classList.toggle('active', teamMembers[index].username === username);
+    });
+    
+    // Show user content
+    document.getElementById('userContent').classList.add('active');
+    
+    // Load user data
+    loadUserData(username);
+}
+
+// Load individual user data
+function loadUserData(username) {
+    userTasks = allTasksData[username] || [];
+    
+    // Update user profile
+    const user = teamMembers.find(m => m.username === username);
+    document.getElementById('selectedUserName').textContent = user.name;
+    document.getElementById('selectedUserRole').textContent = user.role;
+    document.getElementById('selectedUserTeam').textContent = user.team;
+    document.getElementById('selectedUserTenure').textContent = user.tenure || 'N/A';
+    
+    // Update statistics
+    document.getElementById('userCompletedTasks').textContent = user.stats?.completed || 0;
+    document.getElementById('userPendingTasks').textContent = user.stats?.pending || 0;
+    document.getElementById('userCompletionRate').textContent = user.stats?.completion || 0;
+    
+    // Update category progress
+    renderUserCategoryProgress(username);
+    
+    // Setup filters
+    setupUserFilters();
+    
+    // Filter and render tasks
+    currentUserPage = 1;
+    filterUserTasks();
+}
+
+// Render user category progress
+function renderUserCategoryProgress(username) {
+    const container = document.getElementById('userCategoryProgress');
+    container.innerHTML = '';
+    
+    const tasks = allTasksData[username] || [];
+    const categoryStats = {};
+    
+    tasks.forEach(task => {
+        if (!categoryStats[task.Category]) {
+            categoryStats[task.Category] = { completed: 0, total: 0 };
+        }
+        
+        const markets = Object.keys(task).filter(key => 
+            !['Item_ID', 'Category', 'Task_Group', 'Task_Name'].includes(key)
+        );
+        
+        markets.forEach(market => {
+            if (task[market] === 'yes' || task[market] === 'YES') {
+                categoryStats[task.Category].completed++;
+                categoryStats[task.Category].total++;
+            } else if (task[market] === 'no' || task[market] === 'NO') {
+                categoryStats[task.Category].total++;
+            }
+        });
+    });
+    
+    Object.keys(categoryStats).forEach(category => {
+        const stat = categoryStats[category];
+        const percent = stat.total > 0 ? Math.round((stat.completed / stat.total) * 100) : 0;
+        
+        const progress = document.createElement('div');
+        progress.className = 'category-progress';
+        progress.innerHTML = `
+            <span class="category-name">${category}</span>
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-fill" style="width: ${percent}%"></div>
+            </div>
+            <span class="category-percent">${percent}%</span>
+        `;
+        
+        container.appendChild(progress);
+    });
+}
+
+// Setup user filters
+function setupUserFilters() {
+    const categories = [...new Set(userTasks.map(t => t.Category))].filter(Boolean);
+    const categoryFilter = document.getElementById('userCategoryFilter');
+    
+    categoryFilter.innerHTML = '<option value="">All Categories</option>';
+    categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        categoryFilter.appendChild(option);
+    });
+}
+
+// Filter user tasks
+function filterUserTasks() {
+    const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+    const categoryFilter = document.getElementById('userCategoryFilter').value;
+    const statusFilter = document.getElementById('userStatusFilter').value;
+    
+    filteredUserTasks = userTasks.filter(task => {
+        const matchesSearch = !searchTerm || 
+            task.Task_Name.toLowerCase().includes(searchTerm) ||
+            task.Category.toLowerCase().includes(searchTerm) ||
+            task.Task_Group.toLowerCase().includes(searchTerm);
+        
+        const matchesCategory = !categoryFilter || task.Category === categoryFilter;
+        
+        let matchesStatus = true;
+        if (statusFilter) {
+            const markets = Object.keys(task).filter(key => 
+                !['Item_ID', 'Category', 'Task_Group', 'Task_Name'].includes(key)
+            );
+            
+            const hasYes = markets.some(m => task[m] === 'yes' || task[m] === 'YES');
+            const hasNo = markets.some(m => task[m] === 'no' || task[m] === 'NO');
+            
+            matchesStatus = (statusFilter === 'yes' && hasYes) || (statusFilter === 'no' && hasNo);
+        }
+        
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
+    
+    renderUserTasks();
+}
+
+// Render user tasks table
+function renderUserTasks() {
+    const tbody = document.getElementById('userTasksTableBody');
+    const emptyState = document.getElementById('userEmptyState');
+    
+    tbody.innerHTML = '';
+    
+    if (filteredUserTasks.length === 0) {
+        document.getElementById('userTasksTable').style.display = 'none';
+        emptyState.style.display = 'flex';
+        updateUserPaginationInfo(0, 0, 0);
+        return;
+    }
+    
+    document.getElementById('userTasksTable').style.display = 'table';
+    emptyState.style.display = 'none';
+    
+    // Paginate
+    const startIndex = (currentUserPage - 1) * CONFIG.maxRowsPerPage;
+    const endIndex = Math.min(startIndex + CONFIG.maxRowsPerPage, filteredUserTasks.length);
+    const pageData = filteredUserTasks.slice(startIndex, endIndex);
+    
+    // Render rows
+    pageData.forEach(task => {
+        const row = document.createElement('tr');
+        
+        const markets = Object.keys(task).filter(key => 
+            !['Item_ID', 'Category', 'Task_Group', 'Task_Name'].includes(key)
+        );
+        
+        const marketBadges = markets.map(market => {
+            const value = task[market];
+            if (value === 'yes' || value === 'YES') {
+                return `<span class="market-badge yes">${market}: YES</span>`;
+            } else if (value === 'no' || value === 'NO') {
+                return `<span class="market-badge no">${market}: NO</span>`;
+            } else {
+                return `<span class="market-badge na">${market}: N/A</span>`;
+            }
+        }).join('');
+        
+        const hasYes = markets.some(m => task[m] === 'yes' || task[m] === 'YES');
+        const hasNo = markets.some(m => task[m] === 'no' || task[m] === 'NO');
+        const status = hasYes && !hasNo ? 'completed' : 'pending';
+        
+        row.innerHTML = `
+            <td>${task.Item_ID}</td>
+            <td>${task.Category}</td>
+            <td>${task.Task_Group}</td>
+            <td>${task.Task_Name}</td>
+            <td><div class="market-badges">${marketBadges}</div></td>
+            <td><span class="status-badge ${status}">${status}</span></td>
+        `;
+        
+        tbody.appendChild(row);
+    });
+    
+    updateUserPagination();
+    updateUserPaginationInfo(startIndex + 1, endIndex, filteredUserTasks.length);
+}
+
+// Update user pagination
+function updateUserPagination() {
+    const totalPages = Math.ceil(filteredUserTasks.length / CONFIG.maxRowsPerPage);
+    const paginationControls = document.getElementById('userPaginationControls');
+    paginationControls.innerHTML = '';
+    
+    if (totalPages <= 1) return;
+    
+    // Previous button
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'page-btn';
+    prevBtn.textContent = 'Previous';
+    prevBtn.disabled = currentUserPage === 1;
+    prevBtn.onclick = () => {
+        if (currentUserPage > 1) {
+            currentUserPage--;
+            renderUserTasks();
+        }
+    };
+    paginationControls.appendChild(prevBtn);
+    
+    // Page numbers
+    let startPage = Math.max(1, currentUserPage - 2);
+    let endPage = Math.min(totalPages, startPage + 4);
+    
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'page-btn' + (i === currentUserPage ? ' active' : '');
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => {
+            currentUserPage = i;
+            renderUserTasks();
+        };
+        paginationControls.appendChild(pageBtn);
+    }
+    
+    // Next button
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'page-btn';
+    nextBtn.textContent = 'Next';
+    nextBtn.disabled = currentUserPage === totalPages;
+    nextBtn.onclick = () => {
+        if (currentUserPage < totalPages) {
+            currentUserPage++;
+            renderUserTasks();
+        }
+    };
+    paginationControls.appendChild(nextBtn);
+}
+
+function updateUserPaginationInfo(from, to, total) {
+    document.getElementById('userShowingFrom').textContent = from;
+    document.getElementById('userShowingTo').textContent = to;
+    document.getElementById('userTotalRecords').textContent = total;
+}
+
+// Switch main tabs
+function switchMainTab(tab) {
+    // Update tab buttons
+    document.querySelectorAll('.main-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.main-tab').classList.add('active');
+    
+    // Update tab content
+    document.querySelectorAll('.tab-pane').forEach(pane => {
+        pane.classList.remove('active');
+    });
+    
+    if (tab === 'stats') {
+        document.getElementById('statsTab').classList.add('active');
+    } else if (tab === 'individual') {
+        document.getElementById('individualTab').classList.add('active');
+        // Make sure to show first user when switching tabs
+        if (teamMembers.length > 0 && !selectedUser) {
+            selectUserTab(teamMembers[0].username);
+        }
+    }
+}
+
+// View user details (from card) - FIXED
+function viewUserDetails(username) {
+    // Switch to individual tab
+    document.querySelectorAll('.main-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.main-tab')[1].classList.add('active'); // Second tab
+    
+    // Switch tab panes
+    document.getElementById('statsTab').classList.remove('active');
+    document.getElementById('individualTab').classList.add('active');
+    
+    // Select the user
+    selectUserTab(username);
+}
+
+// Toggle member view (grid/list)
+function toggleMemberView(view) {
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.toggle-btn').classList.add('active');
+    
+    // In this implementation, we only have grid view
+    // List view could be implemented as a table format
+}
+
+// Email team report
+function emailTeamReport() {
+    const selectedTeamName = currentUser.role === 'admin' && selectedTeam !== 'all' 
+        ? selectedTeam 
+        : currentUser.role === 'admin' ? 'All Teams' : currentUser.team;
+    
+    const subject = `Team Skill Matrix Report - ${selectedTeamName} - ${new Date().toLocaleDateString()}`;
+    
+    const body = `Team Skill Matrix Progress Report
+
+Team: ${selectedTeamName}
+Date: ${new Date().toLocaleDateString()}
+Manager: ${currentUser.name}
+
+=== TEAM OVERVIEW ===
+Total Members: ${teamStatistics.totalMembers}
+Average Completion: ${teamStatistics.avgCompletion}%
+Total Skills Tracked: ${teamStatistics.totalSkills}
+Top Performer: ${teamStatistics.topPerformer}
+
+=== TEAM MEMBERS ===
+${teamMembers.map(m => `${m.name}: ${m.stats?.completion || 0}% complete`).join('\n')}
+
+View full details: ${CONFIG.confluence.pageUrl}
+
+Generated by Confluence Skill Matrix System`;
+    
+    const encodedBody = encodeURIComponent(body);
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodedBody}`;
+    
+    showToast('Email draft created. Please send from your email client.', 'success');
+}
+
+// Copy team report to clipboard
+async function copyTeamReport() {
+    const selectedTeamName = currentUser.role === 'admin' && selectedTeam !== 'all' 
+        ? selectedTeam 
+        : currentUser.role === 'admin' ? 'All Teams' : currentUser.team;
+    
+    const report = `Team Skill Matrix Report
+Team: ${selectedTeamName}
+Date: ${new Date().toLocaleDateString()}
+
+=== STATISTICS ===
+Members: ${teamStatistics.totalMembers}
+Avg Completion: ${teamStatistics.avgCompletion}%
+Total Skills: ${teamStatistics.totalSkills}
+Top Performer: ${teamStatistics.topPerformer}
+
+=== MEMBERS ===
+${teamMembers.map(m => `${m.name}: ${m.stats?.completion || 0}%`).join('\n')}
+
+View full details: ${CONFIG.confluence.pageUrl}`;
+    
+    try {
+        await navigator.clipboard.writeText(report);
+        showToast('Report copied to clipboard!', 'success');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        showToast('Failed to copy report', 'error');
+    }
+}
+
+// Export team Excel
+function exportTeamExcel() {
+    const selectedTeamName = currentUser.role === 'admin' && selectedTeam !== 'all' 
+        ? selectedTeam 
+        : currentUser.role === 'admin' ? 'All Teams' : currentUser.team;
+    
+    const wb = XLSX.utils.book_new();
+    
+    // Team Overview sheet
+    const overviewData = [
+        ['Team Skill Matrix Report'],
+        [''],
+        ['Team', selectedTeamName],
+        ['Date', new Date().toLocaleDateString()],
+        ['Manager', currentUser.name],
+        [''],
+        ['Statistics'],
+        ['Total Members', teamStatistics.totalMembers],
+        ['Average Completion', `${teamStatistics.avgCompletion}%`],
+        ['Total Skills', teamStatistics.totalSkills],
+        ['Top Performer', teamStatistics.topPerformer]
+    ];
+    const wsOverview = XLSX.utils.aoa_to_sheet(overviewData);
+    XLSX.utils.book_append_sheet(wb, wsOverview, 'Overview');
+    
+    // Team Members sheet
+    const memberHeaders = ['Name', 'Role', 'Team', 'Tenure', 'Completed', 'Pending', 'Total', 'Completion %'];
+    const memberData = teamMembers.map(m => [
+        m.name,
+        m.role,
+        m.team,
+        m.tenure || 'N/A',
+        m.stats?.completed || 0,
+        m.stats?.pending || 0,
+        m.stats?.total || 0,
+        m.stats?.completion || 0
+    ]);
+    const wsMembers = XLSX.utils.aoa_to_sheet([memberHeaders, ...memberData]);
+    XLSX.utils.book_append_sheet(wb, wsMembers, 'Team Members');
+    
+    // Individual sheets for each member
+    teamMembers.forEach(member => {
+        const tasks = allTasksData[member.username] || [];
+        if (tasks.length > 0) {
+            const ws = XLSX.utils.json_to_sheet(tasks);
+            XLSX.utils.book_append_sheet(wb, ws, member.name.substring(0, 31)); // Excel sheet names max 31 chars
+        }
+    });
+    
+    XLSX.writeFile(wb, `team_skills_${selectedTeamName.replace(/\s+/g, '_')}_${new Date().getTime()}.xlsx`);
+    showToast('Excel exported successfully!', 'success');
+}
+
+// Export individual user data
+function exportUserData() {
+    if (!selectedUser) return;
+    exportMemberData(selectedUser.username);
+}
+
+// Export member data
+function exportMemberData(username) {
+    const member = teamMembers.find(m => m.username === username);
+    const tasks = allTasksData[username] || [];
+    
+    if (!member || tasks.length === 0) {
+        showToast('No data to export', 'warning');
+        return;
+    }
+    
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(tasks);
+    XLSX.utils.book_append_sheet(wb, ws, 'Skills');
+    
+    XLSX.writeFile(wb, `${member.name}_skills_${new Date().getTime()}.xlsx`);
+    showToast(`Exported ${member.name}'s skills data`, 'success');
+}
+
+// Refresh team data
+async function refreshTeamData() {
+    await initializeApp();
+    showToast('Team data refreshed successfully', 'success');
+}
+
+// Utility functions
+function showLoading(show) {
+    const overlay = document.getElementById('teamLoadingOverlay');
+    if (overlay) {
+        overlay.classList.toggle('active', show);
+    }
+}
+
+function showNoAccess() {
+    document.getElementById('myTeamPage').style.display = 'none';
+    document.getElementById('teamNoAccessMessage').style.display = 'flex';
+}
+
+// Toast notification system
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('teamToastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const icons = {
+        success: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        error: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        warning: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>',
+        info: '<svg class="toast-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+    };
+    
+    toast.innerHTML = `
+        ${icons[type]}
+        <span style="margin-left: 8px;">${message}</span>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+    initializeApp();
+}
