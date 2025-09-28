@@ -1,0 +1,238 @@
+<div id="approvalsPage" class="approvals-container">
+    <!-- Header Section -->
+    <div class="page-header">
+        <div class="header-left">
+            <h1 class="page-title">
+                <svg class="title-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Approval Management
+            </h1>
+            <span class="page-subtitle">Review and manage skill update requests</span>
+        </div>
+        <div class="header-right">
+            <div class="stats-badge">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Pending: <strong id="pendingCount">0</strong></span>
+            </div>
+            <button id="refreshBtn" class="refresh-btn" onclick="refreshApprovals()">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <div class="card-icon pending">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="card-value" id="pendingRequests">0</div>
+                <div class="card-label">Pending Requests</div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="card-icon approved">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="card-value" id="approvedToday">0</div>
+                <div class="card-label">Approved Today</div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="card-icon rejected">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="card-value" id="rejectedToday">0</div>
+                <div class="card-label">Rejected Today</div>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="card-icon total">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div class="card-value" id="totalProcessed">0</div>
+                <div class="card-label">Total Processed</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+        <div class="filters-left">
+            <div class="search-box">
+                <svg class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="Search by user, task, or request ID..." class="search-input" onkeyup="filterApprovals()">
+            </div>
+            <select id="statusFilter" class="filter-select" onchange="filterApprovals()">
+                <option value="pending">Pending Only</option>
+                <option value="all">All Requests</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+            <select id="teamFilter" class="filter-select" onchange="filterApprovals()">
+                <option value="all">All Teams</option>
+            </select>
+            <select id="categoryFilter" class="filter-select" onchange="filterApprovals()">
+                <option value="">All Categories</option>
+            </select>
+        </div>
+        <div class="filters-right">
+            <button id="bulkApproveBtn" class="bulk-btn approve" onclick="bulkApprove()" disabled>
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Bulk Approve (<span id="selectedCount">0</span>)
+            </button>
+            <button id="exportBtn" class="export-btn" onclick="exportApprovals()">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Approvals Table -->
+    <div class="table-container">
+        <table id="approvalsTable" class="approvals-table">
+            <thead>
+                <tr>
+                    <th class="checkbox-column">
+                        <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                    </th>
+                    <th onclick="sortTable('Request ID')">Request ID</th>
+                    <th onclick="sortTable('Username')">User</th>
+                    <th onclick="sortTable('Team')">Team</th>
+                    <th onclick="sortTable('Task_Name')">Task Name</th>
+                    <th onclick="sortTable('Category')">Category</th>
+                    <th>Changes</th>
+                    <th onclick="sortTable('Timestamp')">Submitted</th>
+                    <th onclick="sortTable('Status')">Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="approvalsTableBody">
+                <!-- Dynamic content -->
+            </tbody>
+        </table>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+            <svg class="empty-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <h3>No Approval Requests</h3>
+            <p>There are no pending approval requests at this time.</p>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container">
+        <div class="pagination-info">
+            Showing <span id="showingFrom">0</span> to <span id="showingTo">0</span> of <span id="totalRecords">0</span> entries
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+            <!-- Dynamic pagination buttons -->
+        </div>
+    </div>
+
+    <!-- Approval Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Approval Request Details</h3>
+                <button class="modal-close" onclick="closeDetailsModal()">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="details-grid" id="modalDetailsContent">
+                    <!-- Dynamic content -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeDetailsModal()">Close</button>
+                <button class="btn-danger" onclick="rejectFromModal()">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Reject
+                </button>
+                <button class="btn-success" onclick="approveFromModal()">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Approve
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rejection Reason Modal -->
+    <div id="rejectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Rejection Reason</h3>
+                <button class="modal-close" onclick="closeRejectModal()">
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label">Please provide a reason for rejection:</label>
+                <textarea id="rejectionReason" class="form-textarea" rows="4" placeholder="Enter rejection reason..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeRejectModal()">Cancel</button>
+                <button class="btn-danger" onclick="confirmReject()">Confirm Rejection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Loading approvals...</p>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- No Access Message -->
+    <div id="noAccessMessage" class="no-access" style="display: none;">
+        <div class="no-access-content">
+            <svg class="no-access-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+            </svg>
+            <h2>Access Restricted</h2>
+            <p>You need Manager or Admin privileges to access this page.</p>
+            <button class="btn-primary" onclick="window.location.href='/'">Go Back</button>
+        </div>
+    </div>
+</div>
