@@ -1,0 +1,265 @@
+<div id="tableau-dashboard-container">
+  <div class="dashboard-wrapper">
+    <div class="tab-navigation">
+      <button class="tab-button active" data-tab="tab1">Report 1</button>
+      <button class="tab-button" data-tab="tab2">Report 2</button>
+      <button class="tab-button" data-tab="tab3">Report 3</button>
+      <button class="tab-button" data-tab="tab4">Report 4</button>
+      <button class="tab-button" data-tab="tab5">Report 5</button>
+    </div>
+
+    <div class="tab-content-wrapper">
+      <div id="tab1" class="tab-content active">
+        <div class="table-header">
+          <div class="table-info">
+            <span class="record-count">Loading...</span>
+          </div>
+          <div class="table-controls">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" class="search-input" placeholder="Search across all columns..." data-tab="tab1">
+            </div>
+            <button class="filter-button" onclick="openFilterModal('tab1')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filters
+              <span class="filter-badge" id="filterBadge1" style="display: none;">0</span>
+            </button>
+            <select class="rows-per-page" data-tab="tab1">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+            <button class="export-button" onclick="exportData('tab1')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-container" id="tableContainer1">
+          <div class="loading-spinner">
+            <div class="spinner-icon">⏳</div>
+            <p>Loading data from Tableau...</p>
+            <p class="loading-hint">If this takes too long, you may not have access to this dashboard</p>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination1"></div>
+      </div>
+      
+      <div id="tab2" class="tab-content">
+        <div class="table-header">
+          <div class="table-info">
+            <span class="record-count">Loading...</span>
+          </div>
+          <div class="table-controls">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" class="search-input" placeholder="Search across all columns..." data-tab="tab2">
+            </div>
+            <button class="filter-button" onclick="openFilterModal('tab2')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filters
+              <span class="filter-badge" id="filterBadge2" style="display: none;">0</span>
+            </button>
+            <select class="rows-per-page" data-tab="tab2">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+            <button class="export-button" onclick="exportData('tab2')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-container" id="tableContainer2">
+          <div class="loading-spinner">
+            <div class="spinner-icon">⏳</div>
+            <p>Loading data from Tableau...</p>
+            <p class="loading-hint">If this takes too long, you may not have access to this dashboard</p>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination2"></div>
+      </div>
+      
+      <div id="tab3" class="tab-content">
+        <div class="table-header">
+          <div class="table-info">
+            <span class="record-count">Loading...</span>
+          </div>
+          <div class="table-controls">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" class="search-input" placeholder="Search across all columns..." data-tab="tab3">
+            </div>
+            <button class="filter-button" onclick="openFilterModal('tab3')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filters
+              <span class="filter-badge" id="filterBadge3" style="display: none;">0</span>
+            </button>
+            <select class="rows-per-page" data-tab="tab3">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+            <button class="export-button" onclick="exportData('tab3')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-container" id="tableContainer3">
+          <div class="loading-spinner">
+            <div class="spinner-icon">⏳</div>
+            <p>Loading data from Tableau...</p>
+            <p class="loading-hint">If this takes too long, you may not have access to this dashboard</p>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination3"></div>
+      </div>
+      
+      <div id="tab4" class="tab-content">
+        <div class="table-header">
+          <div class="table-info">
+            <span class="record-count">Loading...</span>
+          </div>
+          <div class="table-controls">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" class="search-input" placeholder="Search across all columns..." data-tab="tab4">
+            </div>
+            <button class="filter-button" onclick="openFilterModal('tab4')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filters
+              <span class="filter-badge" id="filterBadge4" style="display: none;">0</span>
+            </button>
+            <select class="rows-per-page" data-tab="tab4">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+            <button class="export-button" onclick="exportData('tab4')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-container" id="tableContainer4">
+          <div class="loading-spinner">
+            <div class="spinner-icon">⏳</div>
+            <p>Loading data from Tableau...</p>
+            <p class="loading-hint">If this takes too long, you may not have access to this dashboard</p>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination4"></div>
+      </div>
+      
+      <div id="tab5" class="tab-content">
+        <div class="table-header">
+          <div class="table-info">
+            <span class="record-count">Loading...</span>
+          </div>
+          <div class="table-controls">
+            <div class="search-wrapper">
+              <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              <input type="text" class="search-input" placeholder="Search across all columns..." data-tab="tab5">
+            </div>
+            <button class="filter-button" onclick="openFilterModal('tab5')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+              </svg>
+              Filters
+              <span class="filter-badge" id="filterBadge5" style="display: none;">0</span>
+            </button>
+            <select class="rows-per-page" data-tab="tab5">
+              <option value="10">10</option>
+              <option value="25" selected>25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+            <button class="export-button" onclick="exportData('tab5')">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Export CSV
+            </button>
+          </div>
+        </div>
+        <div class="table-container" id="tableContainer5">
+          <div class="loading-spinner">
+            <div class="spinner-icon">⏳</div>
+            <p>Loading data from Tableau...</p>
+            <p class="loading-hint">If this takes too long, you may not have access to this dashboard</p>
+          </div>
+        </div>
+        <div class="pagination-container" id="pagination5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Modal -->
+  <div id="filterModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Filter Columns</h3>
+        <button class="modal-close" onclick="closeFilterModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="filterModalBody">
+        <!-- Filter inputs will be dynamically added here -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="clearAllFilters()">Clear All</button>
+        <button class="btn-primary" onclick="applyFilters()">Apply Filters</button>
+      </div>
+    </div>
+  </div>
+</div>
