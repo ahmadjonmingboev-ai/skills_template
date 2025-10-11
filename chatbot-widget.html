@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workspace AI Chatbot Widget</title>
+    <link rel="stylesheet" href="chatbot-styles.css">
+</head>
+<body>
+    <!-- Chatbot Trigger Button -->
+    <div id="chatbot-trigger" class="chatbot-trigger">
+        <div class="chatbot-icon">
+            <svg class="icon-chat" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C6.48 2 2 6.48 2 12C2 13.85 2.51 15.59 3.41 17.08L2.09 20.91C2.03 21.09 2.05 21.28 2.13 21.44C2.21 21.6 2.35 21.72 2.52 21.78C2.62 21.81 2.73 21.83 2.84 21.83C2.91 21.83 2.98 21.82 3.05 21.8L6.88 20.48C8.37 21.38 10.13 21.89 11.98 21.89C17.5 21.89 21.98 17.41 21.98 11.89C21.98 6.37 17.5 1.89 11.98 1.89L12 2Z" fill="currentColor"/>
+            </svg>
+            <svg class="icon-close" width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                <path d="M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <span class="chatbot-label">Chat with AI</span>
+    </div>
+
+    <!-- Chatbot Modal -->
+    <div id="chatbot-modal" class="chatbot-modal">
+        <div class="chatbot-container">
+            <!-- Modal Header -->
+            <div class="chatbot-header">
+                <div class="header-left">
+                    <div class="status-indicator"></div>
+                    <h3 class="header-title">Workspace AI Assistant</h3>
+                </div>
+                <div class="header-actions">
+                    <button id="btn-external" class="header-btn" title="Open in new window">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 13V19C18 19.5304 17.7893 20.0391 17.4142 20.4142C17.0391 20.7893 16.5304 21 16 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M15 3H21V9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M10 14L21 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button id="btn-maximize" class="header-btn" title="Maximize">
+                        <svg class="icon-maximize" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M8 3H5C4.46957 3 3.96086 3.21071 3.58579 3.58579C3.21071 3.96086 3 4.46957 3 5V8M21 8V5C21 4.46957 20.7893 3.96086 20.4142 3.58579C20.0391 3.21071 19.5304 3 19 3H16M16 21H19C19.5304 21 20.0391 20.7893 20.4142 20.4142C20.7893 20.0391 21 19.5304 21 19V16M3 16V19C3 19.5304 3.21071 20.0391 3.58579 20.4142C3.96086 20.7893 4.46957 21 5 21H8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <svg class="icon-minimize" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: none;">
+                            <path d="M8 3V6C8 6.53043 7.78929 7.03914 7.41421 7.41421C7.03914 7.78929 6.53043 8 6 8H3M21 8H18C17.4696 8 16.9609 7.78929 16.5858 7.41421C16.2107 7.03914 16 6.53043 16 6V3M16 21V18C16 17.4696 16.2107 16.9609 16.5858 16.5858C16.9609 16.2107 17.4696 16 18 16H21M3 16H6C6.53043 16 7.03914 16.2107 7.41421 16.5858C7.78929 16.9609 8 17.4696 8 18V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <button id="btn-close" class="header-btn" title="Minimize">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body with iframe -->
+            <div class="chatbot-body">
+                <div class="iframe-loader">
+                    <div class="spinner"></div>
+                    <p>Loading Workspace AI...</p>
+                </div>
+                <iframe 
+                    id="chatbot-iframe" 
+                    src=""
+                    title="Workspace AI Chat"
+                    frameborder="0"
+                    allow="microphone; camera"
+                    loading="lazy">
+                </iframe>
+            </div>
+        </div>
+    </div>
+
+    <script src="chatbot-script.js"></script>
+</body>
+</html>
