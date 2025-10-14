@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapping Tool</title>
+    
+    <!-- SheetJS Library for Excel handling -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f1f5f9;
+    color: #1e293b;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 12px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-icon {
+    width: 60px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+.header p {
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-button {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    border-bottom: 3px solid transparent;
+    position: relative;
+    bottom: -2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tab-button:hover {
+    color: #3b82f6;
+}
+
+.tab-button.active {
+    color: #1e40af;
+    border-bottom-color: #3b82f6;
+}
+
+.tab-button svg {
+    flex-shrink: 0;
+}
+
+/* Tab Content */
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Card */
+.card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.card-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn svg {
+    flex-shrink: 0;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn-secondary {
+    background: #64748b;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #475569;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+}
+
+.search-box {
+    flex: 1;
+    min-width: 250px;
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.filter-group {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.filter-group select {
+    padding: 8px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    background: white;
+    min-width: 120px;
+}
+
+.filter-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+thead {
+    background: #f8fafc;
+}
+
+th {
+    padding: 14px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 13px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+th:hover {
+    background: #f1f5f9;
+}
+
+th.sortable::after {
+    content: ' ⇅';
+    opacity: 0.3;
+}
+
+th.sort-asc::after {
+    content: ' ↑';
+    opacity: 1;
+    color: #3b82f6;
+}
+
+th.sort-desc::after {
+    content: ' ↓';
+    opacity: 1;
+    color: #3b82f6;
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+}
+
+tr:hover {
+    background: #f8fafc;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.pagination-info {
+    color: #64748b;
+    font-size: 14px;
+}
+
+.pagination {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.pagination button:hover:not(:disabled) {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.pagination button.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: white;
+    margin: 50px auto;
+    padding: 0;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideDown 0.3s;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.close {
+    color: white;
+    cursor: pointer;
+    line-height: 1;
+    transition: transform 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.close:hover {
+    transform: rotate(90deg);
+}
+
+.modal-body {
+    padding: 25px;
+    max-height: calc(80vh - 140px);
+    overflow-y: auto;
+}
+
+.modal-footer {
+    padding: 20px 25px;
+    background: #f8fafc;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid #e2e8f0;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #475569;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+/* String Generator Specific */
+.generator-controls {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 20px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.radio-group input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.output-box {
+    background: #1e293b;
+    color: #e2e8f0;
+    padding: 20px;
+    border-radius: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 600px;
+    overflow-y: auto;
+    position: relative;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 10;
+}
+
+/* Loading Spinner */
+.loading {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Alert */
+.alert {
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.alert svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border-left: 4px solid #3b82f6;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    border-left: 4px solid #10b981;
+}
+
+.alert-error {
+    background: #fee2e2;
+    color: #991b1b;
+    border-left: 4px solid #ef4444;
+}
+
+/* Badge */
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-primary {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-error {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-box {
+        min-width: 100%;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-content {
+        width: 95%;
+        margin: 20px auto;
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+    }
+
+    .pagination-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .tab-button {
+        font-size: 14px;
+        padding: 10px 16px;
+    }
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+.mt-4 { margin-top: 2rem; }
+
+.mb-1 { margin-bottom: 0.5rem; }
+.mb-2 { margin-bottom: 1rem; }
+.mb-3 { margin-bottom: 1.5rem; }
+.mb-4 { margin-bottom: 2rem; }
+
+.p-1 { padding: 0.5rem; }
+.p-2 { padding: 1rem; }
+.p-3 { padding: 1.5rem; }
+.p-4 { padding: 2rem; }
+</style>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <div class="header-icon">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Mapping Management Tool</h1>
+                    <p>Manage your mapping data and generate Tableau calculated fields</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" onclick="switchTab('table')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                Mapping Data
+            </button>
+            <button class="tab-button" onclick="switchTab('generator')">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                </svg>
+                String Generator
+            </button>
+        </div>
+
+        <!-- Tab 1: Mapping Data Table -->
+        <div id="table-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Mapping Data Table</h2>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary btn-sm" onclick="openHistoryModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Recent Changes
+                        </button>
+                        <button class="btn btn-primary" onclick="openAddModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add New Record
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="controls">
+                    <div class="search-box">
+                        <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" id="searchInput" placeholder="Search across all columns..." 
+                               oninput="filterTable()">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Instance:</label>
+                        <select id="instanceFilter" onchange="filterTable()">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+
+                    <div class="filter-group">
+                        <label>Rows per page:</label>
+                        <select id="rowsPerPage" onchange="changeRowsPerPage()">
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success" onclick="loadData()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                        </svg>
+                        Refresh Data
+                    </button>
+                </div>
+
+                <!-- Table -->
+                <div class="table-container">
+                    <table id="dataTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortTable('INSTANCE')">Instance</th>
+                                <th class="sortable" onclick="sortTable('CATEGORY_CODE')">Category Code</th>
+                                <th class="sortable" onclick="sortTable('BRANCH_CODE')">Branch Code</th>
+                                <th class="sortable" onclick="sortTable('L1_OWNER')">L1 Owner</th>
+                                <th class="sortable" onclick="sortTable('L2_OWNER')">L2 Owner</th>
+                                <th class="sortable" onclick="sortTable('L3_OWNER')">L3 Owner</th>
+                                <th class="sortable" onclick="sortTable('L4_OWNER')">L4 Owner</th>
+                                <th class="sortable" onclick="sortTable('L5_OWNER')">L5 Owner</th>
+                                <th class="sortable" onclick="sortTable('L6_OWNER')">L6 Owner</th>
+                                <th class="sortable" onclick="sortTable('L7_OWNER')">L7 Owner</th>
+                                <th class="sortable" onclick="sortTable('TEAM_GROUP')">Team Group</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info" id="paginationInfo">
+                        Showing 0 to 0 of 0 entries
+                    </div>
+                    <div class="pagination" id="paginationButtons">
+                        <!-- Pagination buttons will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 2: String Generator -->
+        <div id="generator-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Tableau Calculated Field Generator</h2>
+                </div>
+
+                <div class="alert alert-info">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                    <div>
+                        <strong>How to use:</strong> Configure the parameters below and click "Generate String" 
+                        to create a Tableau calculated field based on your mapping data.
+                    </div>
+                </div>
+
+                <div class="generator-controls">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Branch Key Field Name:</label>
+                            <input type="text" id="branchKeyField" value="[branch_key]" 
+                                   placeholder="e.g., [branch_key]">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Select L-Level Owner:</label>
+                            <select id="levelSelect">
+                                <option value="L1_OWNER">L1 Owner</option>
+                                <option value="L2_OWNER">L2 Owner</option>
+                                <option value="L3_OWNER">L3 Owner</option>
+                                <option value="L4_OWNER">L4 Owner</option>
+                                <option value="L5_OWNER">L5 Owner</option>
+                                <option value="L6_OWNER">L6 Owner</option>
+                                <option value="L7_OWNER">L7 Owner</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Instance Filter:</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="instanceFilter" value="Cash" checked>
+                                Cash Only
+                            </label>
+                            <label>
+                                <input type="radio" name="instanceFilter" value="Stock">
+                                Stock Only
+                            </label>
+                            <label>
+                                <input type="radio" name="instanceFilter" value="Both">
+                                Both Cash & Stock
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Generate For:</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="generateFor" value="all" checked>
+                                All Owners (in selected L-level)
+                            </label>
+                            <label>
+                                <input type="radio" name="generateFor" value="single">
+                                Selected Owner Only
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-group" id="ownerSelectGroup" style="display: none;">
+                        <label>Select Specific Owner:</label>
+                        <select id="specificOwnerSelect">
+                            <option value="">-- Select Owner --</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="generateString()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Generate String
+                    </button>
+                </div>
+
+                <!-- Output -->
+                <div id="outputContainer" style="display: none; position: relative;">
+                    <h3 style="margin-bottom: 15px; color: #1e293b;">Generated Tableau Calculated Field:</h3>
+                    <button class="btn btn-success btn-sm copy-btn" onclick="copyToClipboard()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy to Clipboard
+                    </button>
+                    <div class="output-box" id="generatedOutput"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New Record</h2>
+                <span class="close" onclick="closeEditModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </span>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editIndex">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Instance: *</label>
+                            <select id="editInstance" required>
+                                <option value="">-- Select --</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Stock">Stock</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Category Code: *</label>
+                            <input type="text" id="editCategoryCode" required 
+                                   placeholder="e.g., IT.CASH">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Branch Code: *</label>
+                            <input type="text" id="editBranchCode" required 
+                                   placeholder="e.g., CODE_NR1">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>L1 Owner:</label>
+                            <input type="text" id="editL1Owner" placeholder="L1 Owner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>L2 Owner:</label>
+                            <input type="text" id="editL2Owner" placeholder="L2 Owner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>L3 Owner:</label>
+                            <input type="text" id="editL3Owner" placeholder="L3 Owner">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>L4 Owner:</label>
+                            <input type="text" id="editL4Owner" placeholder="L4 Owner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>L5 Owner:</label>
+                            <input type="text" id="editL5Owner" placeholder="L5 Owner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>L6 Owner:</label>
+                            <input type="text" id="editL6Owner" placeholder="L6 Owner">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>L7 Owner:</label>
+                            <input type="text" id="editL7Owner" placeholder="L7 Owner">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Team Group:</label>
+                            <input type="text" id="editTeamGroup" placeholder="Team Group">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="saveRecord()">
+                    <span id="saveButtonText">Save Record</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    Recent Changes History
+                </h2>
+                <span class="close" onclick="closeHistoryModal()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </span>
+            </div>
+            <div class="modal-body">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <!-- History data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeHistoryModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="script.js"></script>
+<script>
+// ===== CONFIGURATION =====
+const CONFIG = {
+    confluenceBaseUrl: 'https://your-confluence-instance.atlassian.net', // UPDATE THIS
+    pageId: 'YOUR_PAGE_ID', // UPDATE THIS
+    mappingFileName: 'Mapping.xlsx',
+    historyFileName: 'mapping_history.xlsx'
+};
+
+// ===== STATE MANAGEMENT =====
+let mappingData = [];
+let filteredData = [];
+let historyData = [];
+let currentPage = 1;
+let rowsPerPage = 50;
+let sortColumn = null;
+let sortDirection = 'asc';
+
+// ===== INITIALIZATION =====
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    setupGeneratorListeners();
+});
+
+// ===== TAB SWITCHING =====
+function switchTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Remove active class from all buttons
+    document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab
+    if (tabName === 'table') {
+        document.getElementById('table-tab').classList.add('active');
+        document.querySelectorAll('.tab-button')[0].classList.add('active');
+    } else if (tabName === 'generator') {
+        document.getElementById('generator-tab').classList.add('active');
+        document.querySelectorAll('.tab-button')[1].classList.add('active');
+        updateOwnersList();
+    }
+}
+
+// ===== DATA LOADING =====
+async function loadData() {
+    try {
+        showLoadingState();
+        
+        // Fetch mapping data from Confluence
+        const mappingFile = await fetchFileFromConfluence(CONFIG.mappingFileName);
+        const workbook = XLSX.read(mappingFile, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        mappingData = XLSX.utils.sheet_to_json(worksheet);
+
+        // Try to fetch history data
+        try {
+            const historyFile = await fetchFileFromConfluence(CONFIG.historyFileName);
+            const historyWorkbook = XLSX.read(historyFile, { type: 'array' });
+            const historyWorksheet = historyWorkbook.Sheets[historyWorkbook.SheetNames[0]];
+            historyData = XLSX.utils.sheet_to_json(historyWorksheet);
+        } catch (error) {
+            console.log('History file not found, initializing empty history');
+            historyData = [];
+        }
+
+        populateFilters();
+        filterTable();
+        
+        showSuccessMessage('Data loaded successfully!');
+    } catch (error) {
+        console.error('Error loading data:', error);
+        showErrorMessage('Failed to load data. Please check your Confluence configuration.');
+    }
+}
+
+async function fetchFileFromConfluence(fileName) {
+    // Get attachments list
+    const attachmentsUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment`;
+    const response = await fetch(attachmentsUrl, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include'
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch attachments: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const attachment = data.results.find(att => att.title === fileName);
+
+    if (!attachment) {
+        throw new Error(`File ${fileName} not found`);
+    }
+
+    // Download the file
+    const downloadUrl = `${CONFIG.confluenceBaseUrl}${attachment._links.download}`;
+    const fileResponse = await fetch(downloadUrl, {
+        credentials: 'include'
+    });
+
+    if (!fileResponse.ok) {
+        throw new Error(`Failed to download file: ${fileResponse.statusText}`);
+    }
+
+    return await fileResponse.arrayBuffer();
+}
+
+// ===== FILTERING & SEARCH =====
+function populateFilters() {
+    const instanceFilter = document.getElementById('instanceFilter');
+    const instances = [...new Set(mappingData.map(row => row.INSTANCE))];
+    
+    instanceFilter.innerHTML = '<option value="">All</option>';
+    instances.forEach(instance => {
+        instanceFilter.innerHTML += `<option value="${instance}">${instance}</option>`;
+    });
+}
+
+function filterTable() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const instanceFilter = document.getElementById('instanceFilter').value;
+
+    filteredData = mappingData.filter(row => {
+        // Search filter
+        const matchesSearch = searchTerm === '' || 
+            Object.values(row).some(val => 
+                String(val).toLowerCase().includes(searchTerm)
+            );
+
+        // Instance filter
+        const matchesInstance = instanceFilter === '' || row.INSTANCE === instanceFilter;
+
+        return matchesSearch && matchesInstance;
+    });
+
+    currentPage = 1;
+    renderTable();
+}
+
+// ===== SORTING =====
+function sortTable(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+
+    filteredData.sort((a, b) => {
+        let aVal = a[column] || '';
+        let bVal = b[column] || '';
+        
+        if (sortDirection === 'asc') {
+            return aVal > bVal ? 1 : -1;
+        } else {
+            return aVal < bVal ? 1 : -1;
+        }
+    });
+
+    updateSortIndicators();
+    renderTable();
+}
+
+function updateSortIndicators() {
+    document.querySelectorAll('th.sortable').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+    });
+
+    if (sortColumn) {
+        const headers = document.querySelectorAll('th.sortable');
+        headers.forEach(th => {
+            if (th.textContent.includes(sortColumn.replace('_', ' '))) {
+                th.classList.add(sortDirection === 'asc' ? 'sort-asc' : 'sort-desc');
+            }
+        });
+    }
+}
+
+// ===== TABLE RENDERING =====
+function renderTable() {
+    const tbody = document.getElementById('tableBody');
+    const startIndex = (currentPage - 1) * (rowsPerPage === 'all' ? filteredData.length : rowsPerPage);
+    const endIndex = rowsPerPage === 'all' ? filteredData.length : startIndex + rowsPerPage;
+    const pageData = filteredData.slice(startIndex, endIndex);
+
+    tbody.innerHTML = '';
+
+    if (pageData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="12" style="text-align: center; padding: 40px; color: #64748b;">
+                    No data found. Try adjusting your filters.
+                </td>
+            </tr>
+        `;
+    } else {
+        pageData.forEach((row, index) => {
+            const actualIndex = startIndex + index;
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.INSTANCE || ''}</td>
+                    <td>${row.CATEGORY_CODE || ''}</td>
+                    <td>${row.BRANCH_CODE || ''}</td>
+                    <td>${row.L1_OWNER || ''}</td>
+                    <td>${row.L2_OWNER || ''}</td>
+                    <td>${row.L3_OWNER || ''}</td>
+                    <td>${row.L4_OWNER || ''}</td>
+                    <td>${row.L5_OWNER || ''}</td>
+                    <td>${row.L6_OWNER || ''}</td>
+                    <td>${row.L7_OWNER || ''}</td>
+                    <td>${row.TEAM_GROUP || ''}</td>
+                    <td style="white-space: nowrap;">
+                        <button class="btn btn-primary btn-sm" onclick="openEditModal(${actualIndex})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteRecord(${actualIndex})">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    updatePaginationInfo();
+    renderPagination();
+}
+
+// ===== PAGINATION =====
+function changeRowsPerPage() {
+    const select = document.getElementById('rowsPerPage');
+    rowsPerPage = select.value === 'all' ? 'all' : parseInt(select.value);
+    currentPage = 1;
+    renderTable();
+}
+
+function updatePaginationInfo() {
+    const info = document.getElementById('paginationInfo');
+    const startIndex = (currentPage - 1) * (rowsPerPage === 'all' ? filteredData.length : rowsPerPage) + 1;
+    const endIndex = Math.min(
+        rowsPerPage === 'all' ? filteredData.length : currentPage * rowsPerPage,
+        filteredData.length
+    );
+
+    info.textContent = `Showing ${filteredData.length > 0 ? startIndex : 0} to ${endIndex} of ${filteredData.length} entries`;
+}
+
+function renderPagination() {
+    const container = document.getElementById('paginationButtons');
+    if (rowsPerPage === 'all') {
+        container.innerHTML = '';
+        return;
+    }
+
+    const totalPages = Math.ceil(filteredData.length / rowsPerPage);
+    let html = '';
+
+    // Previous button
+    html += `<button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+        ← Previous
+    </button>`;
+
+    // Page numbers
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+
+    if (endPage - startPage < maxPagesToShow - 1) {
+        startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        html += `<button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">
+            ${i}
+        </button>`;
+    }
+
+    // Next button
+    html += `<button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+        Next →
+    </button>`;
+
+    container.innerHTML = html;
+}
+
+function changePage(page) {
+    currentPage = page;
+    renderTable();
+}
+
+// ===== CRUD OPERATIONS =====
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Add New Record';
+    document.getElementById('editForm').reset();
+    document.getElementById('editIndex').value = '';
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function openEditModal(index) {
+    const row = filteredData[index];
+    document.getElementById('modalTitle').textContent = 'Edit Record';
+    document.getElementById('editIndex').value = index;
+    
+    document.getElementById('editInstance').value = row.INSTANCE || '';
+    document.getElementById('editCategoryCode').value = row.CATEGORY_CODE || '';
+    document.getElementById('editBranchCode').value = row.BRANCH_CODE || '';
+    document.getElementById('editL1Owner').value = row.L1_OWNER || '';
+    document.getElementById('editL2Owner').value = row.L2_OWNER || '';
+    document.getElementById('editL3Owner').value = row.L3_OWNER || '';
+    document.getElementById('editL4Owner').value = row.L4_OWNER || '';
+    document.getElementById('editL5Owner').value = row.L5_OWNER || '';
+    document.getElementById('editL6Owner').value = row.L6_OWNER || '';
+    document.getElementById('editL7Owner').value = row.L7_OWNER || '';
+    document.getElementById('editTeamGroup').value = row.TEAM_GROUP || '';
+    
+    document.getElementById('editModal').style.display = 'block';
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+async function saveRecord() {
+    const index = document.getElementById('editIndex').value;
+    const isEdit = index !== '';
+
+    const newRecord = {
+        INSTANCE: document.getElementById('editInstance').value,
+        CATEGORY_CODE: document.getElementById('editCategoryCode').value,
+        BRANCH_CODE: document.getElementById('editBranchCode').value,
+        L1_OWNER: document.getElementById('editL1Owner').value,
+        L2_OWNER: document.getElementById('editL2Owner').value,
+        L3_OWNER: document.getElementById('editL3Owner').value,
+        L4_OWNER: document.getElementById('editL4Owner').value,
+        L5_OWNER: document.getElementById('editL5Owner').value,
+        L6_OWNER: document.getElementById('editL6Owner').value,
+        L7_OWNER: document.getElementById('editL7Owner').value,
+        TEAM_GROUP: document.getElementById('editTeamGroup').value
+    };
+
+    try {
+        document.getElementById('saveButtonText').innerHTML = '<span class="loading"></span> Saving...';
+
+        const oldRecord = isEdit ? filteredData[parseInt(index)] : null;
+
+        if (isEdit) {
+            // Update existing record
+            const actualIndex = mappingData.findIndex(row => 
+                row.INSTANCE === oldRecord.INSTANCE &&
+                row.CATEGORY_CODE === oldRecord.CATEGORY_CODE &&
+                row.BRANCH_CODE === oldRecord.BRANCH_CODE
+            );
+            mappingData[actualIndex] = newRecord;
+        } else {
+            // Add new record
+            mappingData.push(newRecord);
+        }
+
+        // Save to Confluence
+        await saveToConfluence();
+
+        // Add to history
+        await addToHistory(
+            isEdit ? 'UPDATE' : 'CREATE',
+            newRecord,
+            oldRecord
+        );
+
+        closeEditModal();
+        filterTable();
+        showSuccessMessage(`Record ${isEdit ? 'updated' : 'added'} successfully!`);
+    } catch (error) {
+        console.error('Error saving record:', error);
+        showErrorMessage('Failed to save record. Please try again.');
+    } finally {
+        document.getElementById('saveButtonText').textContent = 'Save Record';
+    }
+}
+
+async function deleteRecord(index) {
+    if (!confirm('Are you sure you want to delete this record?')) {
+        return;
+    }
+
+    try {
+        const recordToDelete = filteredData[index];
+        
+        // Find and remove from main data
+        const actualIndex = mappingData.findIndex(row => 
+            row.INSTANCE === recordToDelete.INSTANCE &&
+            row.CATEGORY_CODE === recordToDelete.CATEGORY_CODE &&
+            row.BRANCH_CODE === recordToDelete.BRANCH_CODE
+        );
+        
+        mappingData.splice(actualIndex, 1);
+
+        // Save to Confluence
+        await saveToConfluence();
+
+        // Add to history
+        await addToHistory('DELETE', recordToDelete, null);
+
+        filterTable();
+        showSuccessMessage('Record deleted successfully!');
+    } catch (error) {
+        console.error('Error deleting record:', error);
+        showErrorMessage('Failed to delete record. Please try again.');
+    }
+}
+
+// ===== CONFLUENCE OPERATIONS =====
+async function saveToConfluence() {
+    // Convert data to Excel
+    const worksheet = XLSX.utils.json_to_sheet(mappingData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Mapping');
+    
+    // Compress workbook
+    const excelBuffer = XLSX.write(workbook, { 
+        bookType: 'xlsx', 
+        type: 'array',
+        compression: true 
+    });
+
+    // Create FormData
+    const formData = new FormData();
+    const blob = new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    formData.append('file', blob, CONFIG.mappingFileName);
+    formData.append('comment', 'Updated via Mapping Tool');
+
+    // Check if file exists
+    const attachmentsUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment`;
+    const attachmentsResponse = await fetch(attachmentsUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+    });
+
+    const attachmentsData = await attachmentsResponse.json();
+    const existingAttachment = attachmentsData.results.find(att => att.title === CONFIG.mappingFileName);
+
+    let uploadUrl;
+    if (existingAttachment) {
+        // Update existing attachment
+        uploadUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment/${existingAttachment.id}/data`;
+    } else {
+        // Create new attachment
+        uploadUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment`;
+    }
+
+    const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        body: formData,
+        credentials: 'include'
+    });
+
+    if (!uploadResponse.ok) {
+        throw new Error(`Failed to upload file: ${uploadResponse.statusText}`);
+    }
+}
+
+async function addToHistory(action, newRecord, oldRecord) {
+    const historyEntry = {
+        Timestamp: new Date().toISOString(),
+        User: 'Current User', // You can integrate with Confluence user API
+        Action: action,
+        RowID: `${newRecord.INSTANCE}-${newRecord.CATEGORY_CODE}-${newRecord.BRANCH_CODE}`,
+        OldValue: oldRecord ? JSON.stringify(oldRecord) : '',
+        NewValue: JSON.stringify(newRecord)
+    };
+
+    historyData.unshift(historyEntry); // Add to beginning
+
+    // Save history to Confluence
+    const worksheet = XLSX.utils.json_to_sheet(historyData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'History');
+    
+    const excelBuffer = XLSX.write(workbook, { 
+        bookType: 'xlsx', 
+        type: 'array',
+        compression: true 
+    });
+
+    const formData = new FormData();
+    const blob = new Blob([excelBuffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    formData.append('file', blob, CONFIG.historyFileName);
+    formData.append('comment', 'History updated');
+
+    // Check if history file exists
+    const attachmentsUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment`;
+    const attachmentsResponse = await fetch(attachmentsUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+    });
+
+    const attachmentsData = await attachmentsResponse.json();
+    const existingAttachment = attachmentsData.results.find(att => att.title === CONFIG.historyFileName);
+
+    let uploadUrl;
+    if (existingAttachment) {
+        uploadUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment/${existingAttachment.id}/data`;
+    } else {
+        uploadUrl = `${CONFIG.confluenceBaseUrl}/rest/api/content/${CONFIG.pageId}/child/attachment`;
+    }
+
+    await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'X-Atlassian-Token': 'no-check' },
+        body: formData,
+        credentials: 'include'
+    });
+}
+
+// ===== HISTORY MODAL =====
+function openHistoryModal() {
+    const tbody = document.getElementById('historyTableBody');
+    
+    if (historyData.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 40px; color: #64748b;">
+                    No history records found.
+                </td>
+            </tr>
+        `;
+    } else {
+        tbody.innerHTML = historyData.slice(0, 100).map(entry => {
+            const timestamp = new Date(entry.Timestamp).toLocaleString();
+            return `
+                <tr>
+                    <td>${timestamp}</td>
+                    <td>${entry.User}</td>
+                    <td>
+                        <span class="badge ${
+                            entry.Action === 'CREATE' ? 'badge-success' : 
+                            entry.Action === 'UPDATE' ? 'badge-primary' : 'badge-error'
+                        }">
+                            ${entry.Action}
+                        </span>
+                    </td>
+                    <td style="font-size: 12px;">${entry.RowID}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    document.getElementById('historyModal').style.display = 'block';
+}
+
+function closeHistoryModal() {
+    document.getElementById('historyModal').style.display = 'none';
+}
+
+// ===== STRING GENERATOR =====
+function setupGeneratorListeners() {
+    const generateForRadios = document.querySelectorAll('input[name="generateFor"]');
+    generateForRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const ownerSelectGroup = document.getElementById('ownerSelectGroup');
+            if (this.value === 'single') {
+                ownerSelectGroup.style.display = 'block';
+                updateOwnersList();
+            } else {
+                ownerSelectGroup.style.display = 'none';
+            }
+        });
+    });
+}
+
+function updateOwnersList() {
+    const levelSelect = document.getElementById('levelSelect');
+    const specificOwnerSelect = document.getElementById('specificOwnerSelect');
+    const selectedLevel = levelSelect.value;
+
+    // Get unique owners for selected level
+    const owners = [...new Set(mappingData.map(row => row[selectedLevel]))].filter(o => o);
+    
+    specificOwnerSelect.innerHTML = '<option value="">-- Select Owner --</option>';
+    owners.forEach(owner => {
+        specificOwnerSelect.innerHTML += `<option value="${owner}">${owner}</option>`;
+    });
+}
+
+function generateString() {
+    const branchKeyField = document.getElementById('branchKeyField').value || '[branch_key]';
+    const selectedLevel = document.getElementById('levelSelect').value;
+    const instanceFilter = document.querySelector('input[name="instanceFilter"]:checked').value;
+    const generateFor = document.querySelector('input[name="generateFor"]:checked').value;
+    const specificOwner = document.getElementById('specificOwnerSelect').value;
+
+    // Filter data based on instance
+    let dataToProcess = mappingData;
+    if (instanceFilter !== 'Both') {
+        dataToProcess = mappingData.filter(row => row.INSTANCE === instanceFilter);
+    }
+
+    // Group by owner
+    const ownerGroups = {};
+    dataToProcess.forEach(row => {
+        const owner = row[selectedLevel];
+        if (!owner) return;
+
+        // If generating for single owner, skip others
+        if (generateFor === 'single' && owner !== specificOwner) return;
+
+        if (!ownerGroups[owner]) {
+            ownerGroups[owner] = [];
+        }
+
+        // Combine CATEGORY_CODE and BRANCH_CODE
+        const branchKey = `${row.CATEGORY_CODE}${row.BRANCH_CODE}`;
+        ownerGroups[owner].push(branchKey);
+    });
+
+    // Generate Tableau string
+    let tableauString = '';
+    const owners = Object.keys(ownerGroups);
+
+    if (owners.length === 0) {
+        showErrorMessage('No data found for the selected criteria.');
+        return;
+    }
+
+    owners.forEach((owner, index) => {
+        const branches = ownerGroups[owner];
+        
+        if (index > 0) {
+            tableauString += 'ELSEIF ';
+        } else {
+            tableauString += 'IF ';
+        }
+
+        // Add conditions
+        branches.forEach((branch, branchIndex) => {
+            if (branchIndex > 0) {
+                tableauString += ' OR\n   ';
+            }
+            tableauString += `${branchKeyField}="${branch}"`;
+        });
+
+        tableauString += `\nTHEN "${owner}"\n\n`;
+    });
+
+    tableauString += 'ELSE "Unknown"\nEND';
+
+    // Display output
+    document.getElementById('generatedOutput').textContent = tableauString;
+    document.getElementById('outputContainer').style.display = 'block';
+    
+    // Scroll to output
+    document.getElementById('outputContainer').scrollIntoView({ behavior: 'smooth' });
+}
+
+function copyToClipboard() {
+    const output = document.getElementById('generatedOutput').textContent;
+    navigator.clipboard.writeText(output).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Copied!
+        `;
+        setTimeout(() => {
+            btn.innerHTML = originalHTML;
+        }, 2000);
+    });
+}
+
+// ===== UI HELPERS =====
+function showLoadingState() {
+    document.getElementById('tableBody').innerHTML = `
+        <tr>
+            <td colspan="12" style="text-align: center; padding: 40px;">
+                <div class="loading" style="width: 40px; height: 40px; margin: 0 auto;"></div>
+                <p style="margin-top: 15px; color: #64748b;">Loading data...</p>
+            </td>
+        </tr>
+    `;
+}
+
+function showSuccessMessage(message) {
+    // You can implement a toast notification here
+    console.log('Success:', message);
+}
+
+function showErrorMessage(message) {
+    alert(message);
+    console.error('Error:', message);
+}
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    const editModal = document.getElementById('editModal');
+    const historyModal = document.getElementById('historyModal');
+    
+    if (event.target === editModal) {
+        closeEditModal();
+    }
+    if (event.target === historyModal) {
+        closeHistoryModal();
+    }
+}
+</script>
+</body></html>
