@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLM Instance Management</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- User Info Bar -->
+    <div class="user-bar">
+        <div class="user-info">
+            <span class="user-label">Current User:</span>
+            <span class="username" id="username">Loading...</span>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <div class="header">
+            <h1>TLM Instance Management</h1>
+            <button class="btn btn-primary" id="addNewBtn">+ Add New</button>
+        </div>
+
+        <div class="table-container">
+            <div class="table-wrapper">
+                <table id="dataTable">
+                    <!-- Table will be dynamically generated -->
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Record</h2>
+                <span class="close" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="form-group">
+                        <label>TLM_INSTANCE:</label>
+                        <select id="editInstance">
+                            <option value="CASH">CASH</option>
+                            <option value="STOCK">STOCK</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Category Code:</label>
+                        <input type="text" id="editCategoryCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Branch Code:</label>
+                        <input type="text" id="editBranchCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L1 Owner:</label>
+                        <input type="text" id="editL1Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L2 Owner:</label>
+                        <input type="text" id="editL2Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L3 Owner:</label>
+                        <input type="text" id="editL3Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L4 Owner:</label>
+                        <input type="text" id="editL4Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L5 Owner:</label>
+                        <input type="text" id="editL5Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L6 Owner:</label>
+                        <input type="text" id="editL6Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>L7 Owner:</label>
+                        <input type="text" id="editL7Owner" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Team Group:</label>
+                        <input type="text" id="editTeamGroup" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEdit">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
