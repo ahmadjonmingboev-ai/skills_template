@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worksheet Tool - How to Use & Configure</title>
+    <link rel="stylesheet" href="worksheet_instructions.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="hero-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <line x1="10" y1="9" x2="8" y2="9"></line>
+            </svg>
+        </div>
+        <h1>Worksheet Tool</h1>
+        <p>Transform your data into an interactive, collaborative experience. Turn static spreadsheets into living, breathing tools—track projects, manage inventories, collaborate in real-time, and make data work for you, not the other way around.</p>
+        <div style="margin-top: 32px;">
+            <button class="cta-button" onclick="copyTemplatePage()">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Template Page
+            </button>
+        </div>
+    </div>
+    
+    <!-- Video Tutorial Section -->
+    <div class="video-section">
+        <h2>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="23 7 16 12 23 17 23 7"></polygon>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            Quick Start Video Tutorial
+        </h2>
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            Watch this 3-minute video to learn how to set up and use the Worksheet Tool
+        </p>
+        
+        <!-- Video Embed - Replace src with your SharePoint/Stream URL -->
+        <div style="position: relative; width: 100%; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; background: #000;">
+            <!-- 
+            INSTRUCTIONS TO EMBED YOUR VIDEO:
+            1. Upload your video to SharePoint or Microsoft Stream
+            2. Click "Embed" or "Share" on your video
+            3. Copy the iframe embed code
+            4. Replace the src URL below with your video's embed URL
+            
+            Example SharePoint URL format:
+            https://[your-tenant].sharepoint.com/:v:/s/[site]/[video-id]?e=[code]
+            
+            Example Stream URL format:
+            https://web.microsoftstream.com/embed/video/[video-id]
+            -->
+            <iframe 
+                src="PASTE_YOUR_SHAREPOINT_OR_STREAM_EMBED_URL_HERE"
+                width="100%" 
+                height="100%" 
+                style="border: none; position: absolute; top: 0; left: 0;"
+                allowfullscreen
+                webkitallowfullscreen
+                mozallowfullscreen
+                allow="autoplay; fullscreen">
+            </iframe>
+            
+            <!-- Fallback placeholder (remove this div after adding your video URL) -->
+            <div class="video-placeholder" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                <div style="text-align: center;">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: white;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8" fill="currentColor"></polygon>
+                    </svg>
+                    <p style="margin-top: 16px; font-size: 16px; color: white;">Video Recording Coming Soon</p>
+                    <p style="font-size: 14px; margin-top: 8px; color: rgba(255,255,255,0.7);">Replace iframe src with your SharePoint embed URL</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Compact Resource Links -->
+    <div class="resource-links">
+        <h3>Explore Features & Resources</h3>
+        <div class="resource-grid">
+            <div class="resource-item" onclick="openModal('setupModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                </div>
+                <span>Setup Guide</span>
+            </div>
+            
+            <div class="resource-item" onclick="openModal('featuresModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="16" x2="12" y2="12"></line>
+                        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                    </svg>
+                </div>
+                <span>Key Features</span>
+            </div>
+            
+            <div class="resource-item" onclick="openModal('faqModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <span>FAQ</span>
+            </div>
+            
+            <div class="resource-item" onclick="openModal('tipsModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 2v20M2 12h20"></path>
+                    </svg>
+                </div>
+                <span>Tips & Best Practices</span>
+            </div>
+            
+            <div class="resource-item" onclick="openModal('troubleshootModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path>
+                    </svg>
+                </div>
+                <span>Troubleshooting</span>
+            </div>
+            
+            <div class="resource-item" onclick="openModal('advancedModal')">
+                <div class="resource-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="16 18 22 12 16 6"></polyline>
+                        <polyline points="8 6 2 12 8 18"></polyline>
+                    </svg>
+                </div>
+                <span>Advanced Config</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Requirements -->
+    <div class="requirements-box">
+        <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            File Requirements (Per Tab)
+        </h3>
+        
+        <div class="requirement-item">
+            <div class="requirement-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+            </div>
+            <div class="requirement-content">
+                <strong>File Format:</strong> Must be CSV (Comma Separated Values) format
+            </div>
+        </div>
+        
+        <div class="requirement-item">
+            <div class="requirement-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="3" y1="9" x2="21" y2="9"></line>
+                </svg>
+            </div>
+            <div class="requirement-content">
+                <strong>Excel Files:</strong> Must have only 1 tab/sheet. Save as CSV before uploading
+            </div>
+        </div>
+        
+        <div class="requirement-item">
+            <div class="requirement-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+            </div>
+            <div class="requirement-content">
+                <strong>File Size:</strong> Maximum 10 MB per CSV file (recommended under 5 MB)
+            </div>
+        </div>
+        
+        <div class="requirement-item">
+            <div class="requirement-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 11 12 14 22 4"></polyline>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                </svg>
+            </div>
+            <div class="requirement-content">
+                <strong>Primary Key:</strong> Each tab must have a unique identifier column (e.g., ID, Employee ID)
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Setup Guide Modal -->
+<div id="setupModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+                Setup Guide
+            </h2>
+            <button class="modal-close" onclick="closeModal('setupModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <ul class="step-list">
+                <li>
+                    <div class="step-number">1</div>
+                    <div class="step-text">
+                        <strong>Copy the Template Page</strong>
+                        <p>Click the "Copy Template Page" button. Confluence will ask you to choose your destination space and parent page.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">2</div>
+                    <div class="step-text">
+                        <strong>Initial Setup - Welcome Screen</strong>
+                        <p>When you open your copied page for the first time, you'll see a welcome screen. Page ID is auto-detected. Click "Start Setup" to begin.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">3</div>
+                    <div class="step-text">
+                        <strong>Configure Worksheet Settings</strong>
+                        <p>Set your worksheet name, choose a theme (Auto/Light/Dark), and optionally add authorized usernames who can modify settings.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">4</div>
+                    <div class="step-text">
+                        <strong>Add Your First Tab</strong>
+                        <p>Click "Add Tab" and fill in: <span class="badge badge-warning">Display Name</span>, <span class="badge badge-warning">CSV Filename</span>, and <span class="badge badge-warning">Upload CSV File</span>. Configure Primary Key, Sum Column, and enable Write-Back if needed.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">5</div>
+                    <div class="step-text">
+                        <strong>Add Custom Fields (Optional)</strong>
+                        <p>Click "Add Custom Column" to create additional fields. Choose type (Text/Dropdown/Date/Number), add options for dropdowns, and assign colors.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">6</div>
+                    <div class="step-text">
+                        <strong>Save Configuration</strong>
+                        <p>Click "Save Configuration". The tool will auto-create worksheetui.csv and custom column files, then refresh the page automatically.</p>
+                    </div>
+                </li>
+                
+                <li>
+                    <div class="step-number">7</div>
+                    <div class="step-text">
+                        <strong>Start Using Your Worksheet!</strong>
+                        <p>Your worksheet is ready! Use filters, search, grouping, and data operations to manage your information.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Features Modal -->
+<div id="featuresModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+                Key Features
+            </h2>
+            <button class="modal-close" onclick="closeModal('featuresModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: grid; gap: 20px;">
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                            <rect x="3" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Multi-Tab Management
+                    </h3>
+                    <p style="color: var(--text-secondary);">Organize different datasets in separate tabs. Support for up to 5 tabs per worksheet.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--success);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        Full CRUD Operations
+                    </h3>
+                    <p style="color: var(--text-secondary);">Add, edit, duplicate, and delete rows with an intuitive interface. All changes auto-saved to Confluence attachments.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--info);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                        </svg>
+                        Advanced Filtering & Search
+                    </h3>
+                    <p style="color: var(--text-secondary);">Multi-column filters, global search, sorting, and grouping. Filter works on both regular and custom columns.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--warning);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Custom Fields with Colors
+                    </h3>
+                    <p style="color: var(--text-secondary);">Add text, dropdown, date, or number fields. Assign custom colors to dropdown options (10 colors available). Mark fields as required.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--success);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                        Real-Time Presence
+                    </h3>
+                    <p style="color: var(--text-secondary);">See who's currently viewing the worksheet. Updates every 5 minutes. Click the viewer badge to see names.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        Change History & Audit Trail
+                    </h3>
+                    <p style="color: var(--text-secondary);">Track all changes with full audit trail. See who changed what and when. History stored per tab.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--info);">
+                    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Export & Column Resize
+                    </h3>
+                    <p style="color: var(--text-secondary);">Export filtered data to CSV. Resize columns by dragging headers. Sticky checkbox column for easy selection while scrolling.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ Modal -->
+<div id="faqModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                Frequently Asked Questions
+            </h2>
+            <button class="modal-close" onclick="closeModal('faqModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        </svg>
+                        What file formats are supported?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Only CSV (Comma Separated Values) files are supported. If you have an Excel file, save it as CSV first. Make sure your Excel file has only ONE sheet/tab before converting to CSV.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        </svg>
+                        Can I have multiple tabs in my Excel file?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        No. Each CSV file can only represent one Excel sheet. If you need multiple tabs in the Worksheet Tool, save each Excel sheet as a separate CSV file and configure them as different tabs.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        </svg>
+                        What's the maximum file size?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Each CSV file must be under 10 MB. For optimal performance, we recommend keeping files under 5 MB (approximately 50,000 rows).
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        How do I control who can edit the data?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Configuration Access:</strong> Add usernames to "Authorized Users" to restrict who can modify settings.<br><br>
+                        <strong>Data Editing:</strong> Enable "Write-Back" per tab to allow Add/Edit/Delete operations.<br><br>
+                        <strong>Page Access:</strong> Controlled by Confluence page restrictions (set in page settings).
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                        </svg>
+                        Where is my data stored?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        All data is stored as CSV attachments on the Confluence page. This means your data is secured by Confluence's permissions and backup systems. No external databases or services are used.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6"></path>
+                        </svg>
+                        Can I customize colors for dropdowns?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Yes! When creating dropdown custom columns, you can assign specific colors to each option. Choose from: Blue, Green, Yellow, Red, Purple, Pink, Gray, Indigo, Teal, Orange, or use Auto for default coloring.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                        </svg>
+                        How does real-time presence work?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        The tool updates viewer presence every 5 minutes. If someone hasn't updated in 10 minutes, they're considered inactive and removed from the viewers list. Click the green "viewing" badge to see who's currently active.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        Can I resize table columns?
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Yes! Hover over the right edge of any column header and drag to resize. Minimum width is 100px. The checkbox column stays fixed (sticky) when scrolling horizontally.
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Tips Modal -->
+<div id="tipsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v20M2 12h20"></path>
+                </svg>
+                Tips & Best Practices
+            </h2>
+            <button class="modal-close" onclick="closeModal('tipsModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display: grid; gap: 16px;">
+                <div style="padding: 20px; background: #d1fae5; border-radius: var(--radius-md); border-left: 4px solid var(--success);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                        Use Meaningful Names
+                    </h3>
+                    <p style="color: #065f46;">Name your tabs and columns clearly so team members understand the data at a glance.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--primary-light); border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--primary-dark); display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Keep Primary Keys Unique
+                    </h3>
+                    <p style="color: var(--primary-dark);">Ensure your ID column has unique values to prevent data conflicts and enable proper editing.</p>
+                </div>
+                
+                <div style="padding: 20px; background: #fef3c7; border-radius: var(--radius-md); border-left: 4px solid var(--warning);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #92400e; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        </svg>
+                        Test Before Production
+                    </h3>
+                    <p style="color: #92400e;">Test write-back operations on a copy of your data before enabling on production files.</p>
+                </div>
+                
+                <div style="padding: 20px; background: #d1fae5; border-radius: var(--radius-md); border-left: 4px solid var(--success);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Use Custom Columns
+                    </h3>
+                    <p style="color: #065f46;">Add comments, status, or priority fields without modifying your original CSV structure.</p>
+                </div>
+                
+                <div style="padding: 20px; background: var(--primary-light); border-radius: var(--radius-md); border-left: 4px solid var(--primary);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: var(--primary-dark); display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Leverage Grouping
+                    </h3>
+                    <p style="color: var(--primary-dark);">Group by status, category, or owner to organize and view your data more effectively.</p>
+                </div>
+                
+                <div style="padding: 20px; background: #d1fae5; border-radius: var(--radius-md); border-left: 4px solid var(--success);">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #065f46; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                        </svg>
+                        Export Regularly
+                    </h3>
+                    <p style="color: #065f46;">Use the Export button to create backups of your filtered/sorted data anytime.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Troubleshooting Modal -->
+<div id="troubleshootModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6M1 12h6m6 0h6"></path>
+                </svg>
+                Troubleshooting
+            </h2>
+            <button class="modal-close" onclick="closeModal('troubleshootModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                        </svg>
+                        "Failed to load configuration" error
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Solution:</strong><br>
+                        1. Check browser console for the auto-detected Page ID<br>
+                        2. Open Settings and verify the Page ID matches your Confluence page<br>
+                        3. Ensure you have permission to access the page attachments
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                        Data not updating after edit
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Solution:</strong><br>
+                        1. Click the "Refresh" button to reload data from attachments<br>
+                        2. Clear your browser cache if the issue persists<br>
+                        3. Check Confluence permissions - you need edit access to modify attachments
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        Column resize not working
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Solution:</strong><br>
+                        1. Hover slowly over the right edge of any column header<br>
+                        2. Cursor should change to resize cursor<br>
+                        3. Click and drag to the desired width<br>
+                        4. Minimum column width is 100px
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        Can't see other viewers
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Solution:</strong><br>
+                        1. Wait up to 5 minutes for presence to update<br>
+                        2. Both users must have the page open in their browser<br>
+                        3. Users inactive for 10+ minutes won't show as viewing
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Features Guide Modal -->
+<div id="guideModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                Feature Guide
+            </h2>
+            <button class="modal-close" onclick="closeModal('guideModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        </svg>
+                        Working with Data
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Add Row:</strong> Click "Add" button to create new entries (requires write-back)<br><br>
+                        <strong>Edit Row:</strong> Select one row and click "Edit" to modify all fields<br><br>
+                        <strong>Duplicate:</strong> Select one row and click "Duplicate" to create a copy<br><br>
+                        <strong>Custom Fields:</strong> Select multiple rows and click "Custom Fields" to update in bulk<br><br>
+                        <strong>Delete:</strong> Select rows and click "Delete" (confirmation required)
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        Filtering & Search
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Global Search:</strong> Type in search box to filter across all columns (works on both regular and custom columns)<br><br>
+                        <strong>Column Filters:</strong> Click "Filter", hold Ctrl/Cmd to select multiple values per column<br><br>
+                        <strong>Sorting:</strong> Click column headers to sort. Click again to reverse, third time to clear<br><br>
+                        <strong>Grouping:</strong> Use "Group by" dropdown to organize rows by any configured column
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Custom Columns
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        <strong>Text:</strong> Free-form input for comments or notes<br><br>
+                        <strong>Dropdown:</strong> Pre-defined options with custom colors (e.g., Status: Open/Closed)<br><br>
+                        <strong>Date:</strong> Date picker for deadlines or timestamps<br><br>
+                        <strong>Number:</strong> Numeric input for scores or quantities<br><br>
+                        <strong>Note:</strong> UPDATED_BY and UPDATED_TIME columns appear automatically at the far right
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9 11 12 14 22 4"></polyline>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                        </svg>
+                        Selection & Bulk Actions
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Use checkboxes to select rows. The summary bar shows total rows, selected count, and sum of selected values (if Sum Column configured).<br><br>
+                        <strong>Select All:</strong> Click "Select All" to select all visible rows on current page<br><br>
+                        <strong>Bulk Custom Fields:</strong> Select multiple rows and use "Custom Fields" to update them all at once
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<!-- Advanced Config Modal -->
+<div id="advancedModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                Advanced Configuration
+            </h2>
+            <button class="modal-close" onclick="closeModal('advancedModal')">&times;</button>
+        </div>
+        <div class="modal-body">
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="9" x2="20" y2="9"></line>
+                            <line x1="4" y1="15" x2="20" y2="15"></line>
+                        </svg>
+                        Column Order Control
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Specify which columns appear first and in what order. Useful for prioritizing important fields.<br><br>
+                        <strong>Example:</strong> ID,Name,Status,Amount,Date<br><br>
+                        Columns not listed will appear after the ordered ones in their natural order.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"></rect>
+                            <rect x="14" y="14" width="7" height="7"></rect>
+                        </svg>
+                        Group By Options
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Define which columns can be used for grouping. These will appear in the "Group by" dropdown.<br><br>
+                        <strong>Example:</strong> Status,Category,Owner,Priority<br><br>
+                        Works with both regular columns and custom columns!
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"></line>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                        </svg>
+                        Sum Column
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Specify a numeric column to automatically calculate the sum of selected rows. The sum appears in the summary bar at the top.<br><br>
+                        <strong>Example:</strong> Amount, Quantity, Hours, Cost<br><br>
+                        Useful for budget tracking, time sheets, inventory counts, etc.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                    <div class="accordion-question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Authorized Users
+                    </div>
+                    <svg class="accordion-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                </div>
+                <div class="accordion-content">
+                    <div class="accordion-answer">
+                        Control who can access the Settings/Configuration button.<br><br>
+                        <strong>Empty list:</strong> Everyone can configure<br>
+                        <strong>With usernames:</strong> Only those users can access settings<br><br>
+                        <strong>Example:</strong> john.doe, jane.smith, admin<br><br>
+                        Note: This only restricts configuration access. Data editing is controlled by Write-Back setting, and page access is controlled by Confluence page restrictions.
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+
+<script src="worksheet_instructions.js"></script>
+
+</body>
+</html>
