@@ -1,0 +1,87 @@
+/* This stylesheet is applied to every page on the site */
+/* Loaded from CP.css */
+#cp-version::after { content: "8. 12-Jan-2026"; }
+
+/* Hide the standard Confluence header whilst loading page */
+body header#header { opacity: 0.001; }
+body.spacetools header#header, body.contenteditor header#header, body.edit header#header { opacity: 1.0; }
+body:not(.spacetools):not(.contenteditor):not(.edit):not(#tinymce) { opacity: 0.001; overflow: hidden;}
+body:not(.spacetools):not(.contenteditor):not(.edit):has(main#main) { transition: all .4s ease-in-out; -moz-transition: all .4s ease-in-out; -webkit-transition: all .4s  ease-in-out; opacity: 1.0; }
+body:not(.spacetools):not(.contenteditor):not(.edit):has(a#viewPageLink) { overflow: initial; }
+body:not(.spacetools):not(.contenteditor):not(.edit):has(a#viewPageLink) header#header { opacity: 1.0; }
+
+/* PROSTA Fonts */
+@font-face {
+  font-family: PROSTA-Sans-Text;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Text;
+  font-style: italic;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Text;
+  font-weight: bold;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Text;
+  font-style: italic;
+  font-weight: bold;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Display;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Display;
+  font-style: italic;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Display;
+  font-weight: bold;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Display-Bold-Italic;
+  font-style: italic;
+  font-weight: bold;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Condensed;
+  src: url(url_font.ttf);
+}
+
+@font-face {
+  font-family: PROSTA-Sans-Condensed;
+  font-style: italic;
+  src: url(url_font.ttf);
+}
+
+body, p { font-family: "PROSTA Sans Text", "PROSTA-Sans-Text", -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; }
+
+h1, .font-display { font-family:  "PROSTA Sans Display", "PROSTA-Sans-Display", -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Fira Sans, Droid Sans, Helvetica Neue, sans-serif; }
+
+/* Hide : Banners at the top of the site */
+body#com-atlassian-confluence > div:first-child[style*="background-color: #220000"],
+body#com-atlassian-confluence > div:nth-child(2)[style*="background-color: #220000"],
+div#header-precursor, div#full-height-container > div:first-child, .adaptavist-psl-warning { display: none; }
+
+/* Hide : "Dashboard" Link in breadcrumbs */
+#breadcrumbs > li.first > span { display: none; }
+#breadcrumbs li:nth-child(2):before { content: ""; display: none; }
+
+/* Dim : Created by ... last modified by ... at ...  */
+#content > div.page-metadata { opacity: 0.5; }
