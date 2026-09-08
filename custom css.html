@@ -1,0 +1,25 @@
+<!-- INSTRUCTIONS ====================================================================
+1. DO NOT REMOVE/MOVE ANY MACROS/BOXES - The 'Include Page' macro adds scripts to make the navbar work
+2. "site-logo" should contain a single image which will be resized to 42px height automatically
+3. "site-title" can be populated as needed (you can also customize styling via the style section below)
+4. Insert your header links into the "button-links" list
+5. Add any custom CSS styling below, that you want on every page of your space
+6. Add any custom Javascript below that you want to run on every page of your space
+==================================================================================== -->
+ 
+<style>
+/* Format the site title - feel free to change this if needed */
+div#prosta-navbar .site-title {
+  font-size: 13px;
+  line-height: 15px;
+}
+#main #content {
+    padding-right: 0px !important;
+}
+ 
+button.contentf-button {display: none;}
+div.cell {display: none;}
+</style>
+<script type="text/javascript">
+prostaStyleAdd("hide-pagemeta", "hide-breadcrumbs", "hide-likes", "hide-labels", "hide-comments", "hide-footer", "hide-actions", "hide-title", "disable-imagegallery", "disable-tablefilter");
+</script>
